@@ -1,0 +1,1318 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1100">
+<title>林小雨的相册</title>
+<style>
+/* ==========================================================
+   全局
+   ========================================================== */
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: #EFEAE0;
+}
+
+body {
+  font-family: "Songti SC", "SimSun", "STSong", "Songti TC",
+               "Noto Serif SC", "Source Han Serif SC", serif;
+  font-size: 14px;
+  line-height: 1.7;
+  color: #3A3428;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+a {
+  color: #6B5B3A;
+  text-decoration: none;
+  cursor: pointer;
+}
+a:hover {
+  color: #3A3428;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* ==========================================================
+   假加载 / 噪点
+   ========================================================== */
+#boot {
+  position: fixed; inset: 0;
+  background: #FFFFFF;
+  z-index: 9999;
+  transition: opacity 0.55s ease;
+}
+#boot.gone { opacity: 0; pointer-events: none; }
+
+.wrap { opacity: 0; transition: opacity 0.9s ease; }
+.wrap.loaded { opacity: 1; }
+
+.noise {
+  position: fixed; inset: 0;
+  z-index: 9000;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/></filter><rect width='220' height='220' filter='url(%23n)'/></svg>");
+}
+
+/* ==========================================================
+   站点头部
+   ========================================================== */
+.site-header {
+  background: #FFFFFF;
+  border-bottom: 1px solid #E0D8C8;
+  padding: 26px 0 22px;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.02);
+}
+.site-header-inner {
+  width: 1040px;
+  margin: 0 auto;
+  padding: 0 20px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.site-title-block .site-title {
+  margin: 0 0 4px;
+  font-family: "Songti SC", "SimSun", serif;
+  font-size: 24px;
+  font-weight: bold;
+  letter-spacing: 0.06em;
+  color: #3A3428;
+}
+.site-title-block .site-sub {
+  margin: 0;
+  font-family: "Microsoft YaHei", sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  color: #A89A80;
+}
+
+.site-meta {
+  text-align: right;
+  font-family: "Microsoft YaHei", sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: #A89A80;
+  line-height: 1.9;
+}
+.site-meta .date {
+  font-family: "Courier New", monospace;
+  color: #8A7A5A;
+}
+.site-meta .count {
+  color: #6B5B3A;
+  font-weight: bold;
+}
+
+/* ==========================================================
+   相册主体
+   ========================================================== */
+.album-main {
+  width: 1040px;
+  margin: 0 auto;
+  padding: 34px 20px 60px;
+}
+
+/* 网格 */
+.photo-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 26px 24px;
+}
+
+/* ==========================================================
+   单张照片卡片
+   ========================================================== */
+.photo-card {
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.25s ease;
+}
+.photo-card:hover {
+  transform: translateY(-2px);
+}
+
+/* 照片框：白边 + 阴影 + 轻微旋转 */
+.photo-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background: #FFFFFF;
+  padding: 10px;
+  box-shadow:
+    0 1px 2px rgba(60, 45, 20, 0.08),
+    0 6px 16px rgba(60, 45, 20, 0.12);
+  transition: box-shadow 0.3s ease;
+  cursor: pointer;
+}
+.photo-card:hover .photo-frame {
+  box-shadow:
+    0 2px 4px rgba(60, 45, 20, 0.1),
+    0 10px 24px rgba(60, 45, 20, 0.2);
+}
+
+/* 照片本身 */
+.photo {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: #D8CFBC;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.photo img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  z-index: 2;
+  transition: filter 0.4s ease;
+}
+
+/* 每张照片的兜底占位样式：根据不同类型略有不同 */
+.photo-fallback {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.5);
+  font-family: "Microsoft YaHei", sans-serif;
+  font-size: 10.5px;
+  letter-spacing: 0.24em;
+  text-align: center;
+  padding: 20px;
+  line-height: 1.7;
+}
+
+/* 不同主题的兜底底色 */
+.photo-fallback.tone-sunset {
+  background: linear-gradient(180deg, #D89A6A 0%, #8A5A3C 45%, #4A3528 100%);
+}
+.photo-fallback.tone-dark {
+  background: linear-gradient(180deg, #3A3530 0%, #1A1814 60%, #080806 100%);
+}
+.photo-fallback.tone-warm {
+  background: linear-gradient(180deg, #C8B8A0 0%, #8A7860 60%, #5A4A38 100%);
+}
+.photo-fallback.tone-cold {
+  background: linear-gradient(180deg, #9AA8B0 0%, #6A7880 55%, #3A4248 100%);
+}
+.photo-fallback.tone-mirror {
+  background:
+    radial-gradient(ellipse at 50% 40%,
+      #8A7860 0%,
+      #4A4238 50%,
+      #1A1814 100%);
+}
+.photo-fallback.tone-corridor {
+  background:
+    radial-gradient(ellipse at 50% 50%,
+      #6A5A48 0%,
+      #3A3028 45%,
+      #0A0806 100%);
+}
+.photo-fallback.tone-cat-eye {
+  background:
+    radial-gradient(circle at 50% 50%,
+      #000000 0%,
+      #000000 32%,
+      #2A2620 55%,
+      #5A4A38 100%);
+}
+
+/* 照片角落的小标记 */
+.photo-corner {
+  position: absolute;
+  z-index: 3;
+  font-family: "Courier New", monospace;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.42);
+  text-shadow: 0 0 5px rgba(0, 0, 0, 0.7);
+  pointer-events: none;
+}
+.photo-corner.bl { left: 6px; bottom: 6px; }
+.photo-corner.br { right: 6px; bottom: 6px; }
+
+/* 悬停提示 */
+.photo-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 8px;
+  transform: translateX(-50%);
+  z-index: 4;
+  padding: 2px 10px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #E8E0D0;
+  font-family: "Microsoft YaHei", sans-serif;
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.photo-card:hover .photo-hint { opacity: 1; }
+
+/* 加密照片：叠加一层遮罩 */
+.photo.locked .photo-img {
+  filter: brightness(0.4) grayscale(0.8) blur(1.5px);
+}
+.photo.locked::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  background: repeating-linear-gradient(
+    45deg,
+    transparent 0,
+    transparent 6px,
+    rgba(255, 255, 255, 0.05) 6px,
+    rgba(255, 255, 255, 0.05) 7px
+  );
+  pointer-events: none;
+}
+
+.photo-lock-badge {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 5;
+  padding: 6px 16px;
+  background: rgba(20, 18, 14, 0.85);
+  border: 1px solid rgba(200, 180, 140, 0.3);
+  color: #E8DCC0;
+  font-family: "Microsoft YaHei", sans-serif;
+  font-size: 11.5px;
+  letter-spacing: 0.24em;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* 照片信息（在相框外） */
+.photo-info {
+  padding: 12px 4px 4px;
+  font-family: "Microsoft YaHei", sans-serif;
+}
+.photo-info .pi-title {
+  margin: 0 0 2px;
+  font-size: 13px;
+  font-weight: normal;
+  color: #3A3428;
+  letter-spacing: 0.06em;
+  line-height: 1.4;
+}
+.photo-info .pi-title.locked-title {
+  color: #A89A80;
+  font-style: italic;
+}
+.photo-info .pi-date {
+  font-family: "Courier New", monospace;
+  font-size: 11.5px;
+  color: #A89A80;
+  letter-spacing: 0.04em;
+}
+
+/* ==========================================================
+   加密面板（照片 12 展开后）
+   ========================================================== */
+.lock-panel {
+  margin-top: 14px;
+  padding: 16px 20px 18px;
+  background: #FBF9F4;
+  border: 1px solid #E5DECC;
+  border-left: 3px solid #D8CFBC;
+}
+
+.lock-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.lock-label {
+  font-family: "Microsoft YaHei", sans-serif;
+  font-size: 12.5px;
+  letter-spacing: 0.06em;
+  color: #6B5B3A;
+  white-space: nowrap;
+}
+.lock-input {
+  flex: 1 1 140px;
+  max-width: 180px;
+  padding: 5px 10px;
+  font-family: "Courier New", monospace;
+  font-size: 14px;
+  color: #3A3428;
+  background: #FFFFFF;
+  border: 1px solid #D8CFBC;
+  outline: none;
+  letter-spacing: 0.1em;
+  transition: border-color 0.2s ease;
+}
+.lock-input:focus {
+  border-color: #8A7A5A;
+}
+
+.lock-btn {
+  padding: 5px 16px;
+  font-family: "Microsoft YaHei", sans-serif;
+  font-size: 12.5px;
+  letter-spacing: 0.06em;
+  color: #FFFFFF;
+  background: #6B5B3A;
+  border: 1px solid #5A4A30;
+  cursor: pointer;
+  transition: background 0.18s ease;
+}
+.lock-btn:hover { background: #5A4A30; }
+.lock-btn:active { background: #4A3A24; }
+
+.lock-hint {
+  margin: 6px 0 0;
+  font-family: "Microsoft YaHei", sans-serif;
+  font-size: 12px;
+  color: #A89A80;
+  letter-spacing: 0.04em;
+}
+
+.lock-error {
+  margin: 10px 0 0;
+  font-family: "Microsoft YaHei", sans-serif;
+  font-size: 12px;
+  color: #A84832;
+  letter-spacing: 0.04em;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+.lock-error.on { opacity: 1; }
+
+/* 解密后的正文 */
+.decrypted {
+  display: none;
+  margin-top: 12px;
+  padding-top: 14px;
+  border-top: 1px dashed #E5DECC;
+}
+.decrypted.on { display: block; }
+
+.decrypted-content {
+  font-family: "Songti SC", "SimSun", serif;
+  font-size: 14.5px;
+  line-height: 2.1;
+  color: #3A3428;
+  letter-spacing: 0.02em;
+  white-space: pre-line;
+}
+
+/* ==========================================================
+   隐藏彩蛋
+   ========================================================== */
+.canon {
+  margin-top: 60px;
+  padding-top: 26px;
+  border-top: 1px solid #E0D8C8;
+  text-align: center;
+}
+
+.hidden-text {
+  color: #EFEAE0;                /* 和背景同色 */
+  user-select: text;
+  -webkit-user-select: text;
+  font-family: "Courier New", monospace;
+  font-size: 12px;
+  line-height: 1.9;
+  letter-spacing: 0.04em;
+  display: inline-block;
+  padding: 3px 6px;
+}
+.hidden-text::selection {
+  background: #3A3428;
+  color: #EFEAE0;
+}
+.hidden-text::-moz-selection {
+  background: #3A3428;
+  color: #EFEAE0;
+}
+
+/* ==========================================================
+   页脚
+   ========================================================== */
+.footer {
+  background: #E8E2D2;
+  border-top: 1px solid #D8CFBC;
+  padding: 22px 0 26px;
+  margin-top: 30px;
+}
+.footer-inner {
+  width: 1040px;
+  margin: 0 auto;
+  padding: 0 20px;
+  text-align: center;
+  font-family: "Microsoft YaHei", sans-serif;
+  font-size: 11.5px;
+  letter-spacing: 0.06em;
+  color: #A89A80;
+  line-height: 2;
+}
+.footer-inner a {
+  color: #8A7A5A;
+  text-decoration: none;
+}
+.footer-inner a:hover {
+  color: #3A3428;
+  text-decoration: underline;
+}
+.footer-inner .sep {
+  color: #C8BEA8;
+  margin: 0 6px;
+}
+
+/* ==========================================================
+   灯箱（放大单张照片）
+   ========================================================== */
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(14, 12, 8, 0.94);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  cursor: grab;
+}
+.lightbox.on {
+  display: flex;
+  opacity: 1;
+}
+.lightbox.dragging { cursor: grabbing; }
+
+.lb-canvas {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.lb-img {
+  max-width: 86vw;
+  max-height: 82vh;
+  display: block;
+  transform-origin: center center;
+  transition: transform 0.1s ease-out;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-user-drag: none;
+  pointer-events: none;
+  box-shadow: 0 0 60px rgba(0, 0, 0, 0.8);
+}
+
+.lb-fallback {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 80px;
+  color: #5A5A50;
+  font-family: "Microsoft YaHei", sans-serif;
+  font-size: 13px;
+  letter-spacing: 0.2em;
+  text-align: center;
+  line-height: 2.4;
+  border: 1px solid rgba(200, 190, 170, 0.15);
+  background: rgba(30, 28, 24, 0.6);
+}
+
+.lb-bar {
+  position: absolute;
+  left: 0; right: 0; top: 0;
+  z-index: 3;
+  padding: 14px 22px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #C8BEA8;
+  font-family: "Microsoft YaHei", sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  background: linear-gradient(180deg,
+    rgba(0, 0, 0, 0.7) 0%,
+    rgba(0, 0, 0, 0) 100%);
+  pointer-events: none;
+}
+.lb-bar .lb-title {
+  color: #E8DCC0;
+  font-size: 13px;
+  letter-spacing: 0.18em;
+}
+.lb-bar .lb-index {
+  margin-left: 12px;
+  color: #8A7A5A;
+  font-family: "Courier New", monospace;
+  font-size: 11.5px;
+}
+.lb-bar .lb-close {
+  pointer-events: auto;
+  cursor: pointer;
+  color: #C8BEA8;
+  padding: 2px 8px;
+  font-size: 20px;
+  line-height: 1;
+  transition: color 0.2s ease;
+}
+.lb-bar .lb-close:hover { color: #FFFFFF; }
+
+.lb-foot {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  z-index: 3;
+  padding: 20px 24px 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(0deg,
+    rgba(0, 0, 0, 0.75) 0%,
+    rgba(0, 0, 0, 0) 100%);
+  pointer-events: none;
+}
+.lb-tip {
+  color: #8A7A5A;
+  font-family: "Microsoft YaHei", sans-serif;
+  font-size: 11.5px;
+  letter-spacing: 0.2em;
+  transition: opacity 0.5s ease;
+}
+.lb-tip.fade { opacity: 0.22; }
+
+.lb-zoom-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  pointer-events: auto;
+}
+.lb-zoom-btn {
+  cursor: pointer;
+  color: #C8BEA8;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(200, 190, 170, 0.2);
+  padding: 3px 12px;
+  font-family: "Microsoft YaHei", sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  transition: background 0.2s ease, color 0.2s ease;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.lb-zoom-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #FFFFFF;
+}
+.lb-zoom-val {
+  color: #8A7A5A;
+  font-family: "Courier New", monospace;
+  font-size: 11.5px;
+  letter-spacing: 0.08em;
+  min-width: 62px;
+  text-align: center;
+}
+
+/* ==========================================================
+   模态框（沿用游戏风格）
+   ========================================================== */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(20, 30, 40, 0.35);
+  z-index: 1000;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+.modal-overlay.on { opacity: 1; pointer-events: auto; }
+
+.modal {
+  background: #FFFFFF;
+  border: 1px solid #93AEC9;
+  min-width: 300px; max-width: 460px;
+  box-shadow: 0 6px 22px rgba(20, 30, 40, 0.3);
+  transform: translateY(-6px);
+  transition: transform 0.2s ease;
+}
+.modal-overlay.on .modal { transform: translateY(0); }
+
+.modal-head {
+  background: linear-gradient(180deg, #E6EFF6 0%, #D0E0ED 100%);
+  border-bottom: 1px solid #93AEC9;
+  padding: 7px 12px;
+  font-family: "Microsoft YaHei", sans-serif;
+  font-size: 12px; color: #2B4F6E;
+  display: flex; justify-content: space-between; align-items: center;
+  font-weight: bold; letter-spacing: 0.05em;
+}
+.modal-close {
+  cursor: pointer; color: #5A7A9A;
+  font-size: 15px; line-height: 1;
+  padding: 0 4px; font-weight: normal;
+}
+.modal-close:hover { color: #C03A2B; }
+
+.modal-body {
+  padding: 18px 22px;
+  font-size: 13px;
+  line-height: 2;
+  color: #333;
+}
+.modal-body .muted { color: #9AA8B4; font-style: italic; }
+</style>
+</head>
+
+<body>
+
+<div id="boot"></div>
+<div class="noise"></div>
+
+<div class="wrap" id="wrap">
+
+  <!-- ============ 站点头部 ============ -->
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-title-block">
+        <h1 class="site-title">林小雨的相册</h1>
+        <p class="site-sub">some photos i took</p>
+      </div>
+      <div class="site-meta">
+        最后更新：<span class="date">2013-05-30</span><br>
+        共 <span class="count">12</span> 张
+      </div>
+    </div>
+  </header>
+
+  <!-- ============ 相册主体 ============ -->
+  <main class="album-main">
+    <div class="photo-grid" id="photoGrid">
+      <!-- 由 JS 生成 -->
+    </div>
+
+    <!-- 隐藏彩蛋 -->
+    <div class="canon">
+      <span class="hidden-text" id="easterText">彩蛋2：照片9（楼梯）里，仔细看第7级台阶。</span>
+    </div>
+  </main>
+
+  <!-- ============ 页脚 ============ -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <a href="#">林小雨的相册</a>
+      <span class="sep">·</span>
+      <a href="#" data-modal="留言功能已关闭。">留言</a>
+      <span class="sep">·</span>
+      <a href="#" data-modal="该页面已无法访问。">关于</a>
+      <br>
+      © 2013 · 保留所有权利
+    </div>
+  </footer>
+
+</div>
+
+<!-- 灯箱 -->
+<div class="lightbox" id="lightbox">
+  <div class="lb-bar">
+    <span>
+      <span class="lb-title" id="lbTitle">照片</span>
+      <span class="lb-index" id="lbIndex">· 1 / 12</span>
+    </span>
+    <span class="lb-close" id="lbClose">✕</span>
+  </div>
+
+  <div class="lb-canvas" id="lbCanvas">
+    <img class="lb-img" id="lbImg" src="" alt="">
+    <div class="lb-fallback" id="lbFallback">
+      图片未能加载
+    </div>
+  </div>
+
+  <div class="lb-foot">
+    <div class="lb-zoom-row">
+      <span class="lb-zoom-btn" id="lbZoomOut">−</span>
+      <span class="lb-zoom-val" id="lbZoomVal">100%</span>
+      <span class="lb-zoom-btn" id="lbZoomIn">+</span>
+      <span class="lb-zoom-btn" id="lbReset" style="margin-left:10px;">复位</span>
+    </div>
+    <div class="lb-tip" id="lbTip">滚轮缩放 · 拖动平移 · ESC 关闭</div>
+  </div>
+</div>
+
+<!-- 模态框 -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" role="dialog">
+    <div class="modal-head">
+      <span id="modalTitle">提示</span>
+      <span class="modal-close" id="modalClose">✕</span>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ============================================================
+     照片数据
+     ============================================================ */
+  var PHOTOS = [
+    {
+      id: 1,
+      title: '房间窗外的夕阳',
+      date: '2013-04-05',
+      file: 'album-01-sunset.jpg',
+      tone: 'tone-sunset',
+      fallback: '夕阳'
+    },
+    {
+      id: 2,
+      title: '楼下的小猫',
+      date: '2013-04-12',
+      file: 'album-02-cat.jpg',
+      tone: 'tone-warm',
+      fallback: '小猫'
+    },
+    {
+      id: 3,
+      title: '和朋友的合影',
+      date: '2013-04-20',
+      file: 'album-03-friends.jpg',
+      tone: 'tone-warm',
+      fallback: '合影'
+    },
+    {
+      id: 4,
+      title: '厨房',
+      date: '2013-05-01',
+      file: 'album-04-kitchen.jpg',
+      tone: 'tone-warm',
+      fallback: '厨房'
+    },
+    {
+      id: 5,
+      title: '阳台',
+      date: '2013-05-08',
+      file: 'album-05-balcony.jpg',
+      tone: 'tone-cold',
+      fallback: '阳台'
+    },
+    {
+      id: 6,
+      title: '走廊',
+      date: '2013-05-15',
+      file: 'album-06-corridor.jpg',
+      tone: 'tone-corridor',
+      fallback: '走廊',
+      corner: '601'
+    },
+    {
+      id: 7,
+      title: '门',
+      date: '2013-05-18',
+      file: 'album-07-door.jpg',
+      tone: 'tone-dark',
+      fallback: '门'
+    },
+    {
+      id: 8,
+      title: '猫眼（特写）',
+      date: '2013-05-19',
+      file: 'album-08-cat-eye.jpg',
+      tone: 'tone-cat-eye',
+      fallback: '猫眼'
+    },
+    {
+      id: 9,
+      title: '楼梯',
+      date: '2013-05-25',
+      file: 'album-09-stairs.jpg',
+      tone: 'tone-dark',
+      fallback: '楼梯',
+      corner: '7'
+    },
+    {
+      id: 10,
+      title: '天花板',
+      date: '2013-05-28',
+      file: 'album-10-ceiling.jpg',
+      tone: 'tone-cold',
+      fallback: '天花板'
+    },
+    {
+      id: 11,
+      title: '镜子',
+      date: '2013-05-30',
+      file: 'album-11-mirror.jpg',
+      tone: 'tone-mirror',
+      fallback: '镜子'
+    },
+    {
+      id: 12,
+      title: '（已加密）',
+      date: '——',
+      file: null,
+      tone: 'tone-dark',
+      fallback: '',
+      locked: true
+    }
+  ];
+
+  /* ============================================================
+     渲染网格
+     ============================================================ */
+  var grid = document.getElementById('photoGrid');
+
+  function renderPhotoCard(p) {
+    var card = document.createElement('article');
+    card.className = 'photo-card';
+    card.setAttribute('data-id', p.id);
+
+    var frameHtml =
+      '<div class="photo-frame" data-id="' + p.id + '">' +
+        '<div class="photo' + (p.locked ? ' locked' : '') + '">' +
+          '<div class="photo-fallback ' + p.tone + '">' +
+            (p.fallback ? '<span>' + p.fallback + '</span>' : '') +
+          '</div>';
+
+    if (p.file) {
+      frameHtml +=
+          '<img class="photo-img" src="../images/' + p.file + '" ' +
+               'alt="' + escapeHtml(p.title) + '" ' +
+               'data-id="' + p.id + '" ' +
+               'onerror="this.style.display=\'none\'">';
+    }
+
+    if (p.locked) {
+      frameHtml += '<div class="photo-lock-badge">加密</div>';
+    }
+
+    if (p.corner) {
+      frameHtml += '<span class="photo-corner br">' + p.corner + '</span>';
+    }
+
+    frameHtml +=
+          '<span class="photo-hint">' +
+            (p.locked ? '点击输入密码' : '点击放大') +
+          '</span>' +
+        '</div>' +
+      '</div>';
+
+    var infoHtml =
+      '<div class="photo-info">' +
+        '<h3 class="pi-title' + (p.locked ? ' locked-title' : '') + '">' +
+          escapeHtml(p.title) +
+        '</h3>' +
+        '<div class="pi-date">' + escapeHtml(p.date) + '</div>' +
+      '</div>';
+
+    card.innerHTML = frameHtml + infoHtml;
+    return card;
+  }
+
+  function escapeHtml(s) {
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  /* 逐张渲染 */
+  PHOTOS.forEach(function (p) {
+    grid.appendChild(renderPhotoCard(p));
+  });
+
+  /* ============================================================
+     照片点击处理
+     ============================================================ */
+  grid.addEventListener('click', function (e) {
+    var frame = e.target.closest ? e.target.closest('.photo-frame') : null;
+    if (!frame) return;
+
+    var id = parseInt(frame.getAttribute('data-id'), 10);
+    var photo = PHOTOS.find(function (p) { return p.id === id; });
+    if (!photo) return;
+
+    if (photo.locked) {
+      // 加密照片：进入解锁面板
+      openLockPanel(photo);
+    } else {
+      // 普通照片：打开灯箱
+      openLightbox(photo);
+    }
+  });
+
+  /* ============================================================
+     加密面板
+     ============================================================ */
+  var LOCK_PASSWORD = '0602';
+
+  function openLockPanel(photo) {
+    // 用模态框呈现锁定提示，但输入面板嵌入在网格下方
+    // 先检查是否已经解锁
+    var existing = document.getElementById('lockPanelBlock');
+    if (existing) {
+      existing.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      document.getElementById('lockInputBlock').focus();
+      return;
+    }
+
+    // 在网格下方插入一个解锁区
+    var block = document.createElement('div');
+    block.id = 'lockPanelBlock';
+    block.className = 'photo-card';
+    block.style.gridColumn = '1 / -1';
+    block.style.marginTop = '10px';
+    block.innerHTML =
+      '<div class="lock-panel">' +
+        '<div class="lock-row">' +
+          '<span class="lock-label">输入密码：</span>' +
+          '<input type="text" class="lock-input" id="lockInputBlock" ' +
+                 'inputmode="numeric" maxlength="8" autocomplete="off" ' +
+                 'aria-label="密码">' +
+          '<button class="lock-btn" id="lockBtnBlock" type="button">提交</button>' +
+        '</div>' +
+        '<p class="lock-hint">提示：她失踪的日期</p>' +
+        '<p class="lock-error" id="lockErrorBlock">密码错误。</p>' +
+        '<div class="decrypted" id="decryptedBlock">' +
+          '<div class="decrypted-content">' +
+            '2013-06-02\n\n' +
+            '今天我发现了一件事。\n\n' +
+            '我家里有七扇门。\n' +
+            '我数了很多遍。\n' +
+            '每一遍都数出七扇。\n\n' +
+            '但我知道，\n' +
+            '我家只有一扇门。\n\n' +
+            '那多出来的六扇，\n' +
+            '是它让我看到的。\n\n' +
+            '它想让我数。\n' +
+            '数到第七扇的时候，\n' +
+            '我就会打开它。\n\n' +
+            '我不会数的。' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+
+    grid.parentNode.insertBefore(block, grid.nextSibling);
+
+    // 绑定事件
+    var input = document.getElementById('lockInputBlock');
+    var btn   = document.getElementById('lockBtnBlock');
+    var err   = document.getElementById('lockErrorBlock');
+    var dec   = document.getElementById('decryptedBlock');
+    var panel = block.querySelector('.lock-panel');
+
+    input.addEventListener('input', function () {
+      err.classList.remove('on');
+    });
+
+    function tryUnlock() {
+      var val = input.value.trim();
+      if (val === LOCK_PASSWORD) {
+        panel.querySelector('.lock-row').style.display = 'none';
+        panel.querySelector('.lock-hint').style.display = 'none';
+        panel.querySelector('.lock-error').style.display = 'none';
+        dec.classList.add('on');
+        setTimeout(function () {
+          block.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 260);
+      } else {
+        err.classList.add('on');
+        input.select();
+      }
+    }
+
+    btn.addEventListener('click', tryUnlock);
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        tryUnlock();
+      }
+    });
+
+    // 聚焦并滚动
+    setTimeout(function () {
+      block.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      input.focus();
+    }, 120);
+  }
+
+  /* ============================================================
+     灯箱
+     ============================================================ */
+  var lightbox    = document.getElementById('lightbox');
+  var lbImg       = document.getElementById('lbImg');
+  var lbFallback  = document.getElementById('lbFallback');
+  var lbTitle     = document.getElementById('lbTitle');
+  var lbIndex     = document.getElementById('lbIndex');
+  var lbClose     = document.getElementById('lbClose');
+  var lbZoomIn    = document.getElementById('lbZoomIn');
+  var lbZoomOut   = document.getElementById('lbZoomOut');
+  var lbReset     = document.getElementById('lbReset');
+  var lbZoomVal   = document.getElementById('lbZoomVal');
+  var lbTip       = document.getElementById('lbTip');
+
+  var SCALE_MIN  = 1;
+  var SCALE_MAX  = 6;
+  var SCALE_STEP = 1.25;
+
+  var scale = 1;
+  var panX  = 0;
+  var panY  = 0;
+
+  var dragging = false;
+  var dragStartX = 0;
+  var dragStartY = 0;
+  var dragStartPanX = 0;
+  var dragStartPanY = 0;
+  var movedDuringDrag = false;
+
+  var tipTimer = null;
+  var imgExists = true;
+
+  lbImg.addEventListener('error', function () {
+    imgExists = false;
+    lbImg.style.display = 'none';
+    lbFallback.style.display = 'flex';
+  });
+  lbImg.addEventListener('load', function () {
+    imgExists = true;
+    lbImg.style.display = 'block';
+    lbFallback.style.display = 'none';
+  });
+
+  function applyTransform() {
+    if (!imgExists) return;
+    lbImg.style.transform =
+      'translate(' + panX.toFixed(2) + 'px, ' +
+                     panY.toFixed(2) + 'px) ' +
+      'scale(' + scale.toFixed(4) + ')';
+    lbZoomVal.textContent = Math.round(scale * 100) + '%';
+    clampPan();
+  }
+
+  function clampPan() {
+    if (!imgExists) return;
+    if (scale <= SCALE_MIN + 0.001) {
+      panX = 0;
+      panY = 0;
+      return;
+    }
+    var maxPanX = (scale - 1) * 280;
+    var maxPanY = (scale - 1) * 220;
+    if (panX >  maxPanX) panX =  maxPanX;
+    if (panX < -maxPanX) panX = -maxPanX;
+    if (panY >  maxPanY) panY =  maxPanY;
+    if (panY < -maxPanY) panY = -maxPanY;
+  }
+
+  function setScale(next) {
+    scale = Math.max(SCALE_MIN, Math.min(SCALE_MAX, next));
+    if (scale <= SCALE_MIN + 0.001) {
+      panX = 0;
+      panY = 0;
+    }
+    applyTransform();
+  }
+
+  function resetView() {
+    scale = 1;
+    panX = 0;
+    panY = 0;
+    applyTransform();
+  }
+
+  function openLightbox(photo) {
+    // 更新标题和图片
+    lbTitle.textContent = photo.title;
+    lbIndex.textContent = '· ' + photo.id + ' / 12';
+
+    // 预置图片
+    if (photo.file) {
+      lbImg.style.display = 'block';
+      lbImg.src = '../images/' + photo.file;
+      lbFallback.style.display = 'none';
+      imgExists = true;
+    } else {
+      lbImg.style.display = 'none';
+      lbFallback.style.display = 'flex';
+      imgExists = false;
+    }
+
+    lightbox.classList.add('on');
+    resetView();
+
+    lbTip.classList.remove('fade');
+    if (tipTimer) clearTimeout(tipTimer);
+    tipTimer = setTimeout(function () {
+      lbTip.classList.add('fade');
+    }, 4200);
+
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeLightbox() {
+    lightbox.classList.remove('on');
+    document.body.style.overflow = '';
+    if (tipTimer) { clearTimeout(tipTimer); tipTimer = null; }
+  }
+
+  lbClose.addEventListener('click', function (e) {
+    e.stopPropagation();
+    closeLightbox();
+  });
+
+  lightbox.addEventListener('click', function (e) {
+    if (e.target === lightbox && !movedDuringDrag) {
+      closeLightbox();
+    }
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && lightbox.classList.contains('on')) {
+      closeLightbox();
+    }
+  });
+
+  lightbox.addEventListener('wheel', function (e) {
+    if (!lightbox.classList.contains('on')) return;
+    e.preventDefault();
+    var factor = e.deltaY < 0 ? SCALE_STEP : 1 / SCALE_STEP;
+    setScale(scale * factor);
+  }, { passive: false });
+
+  lbZoomIn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    setScale(scale * SCALE_STEP);
+  });
+  lbZoomOut.addEventListener('click', function (e) {
+    e.stopPropagation();
+    setScale(scale / SCALE_STEP);
+  });
+  lbReset.addEventListener('click', function (e) {
+    e.stopPropagation();
+    resetView();
+  });
+
+  function onDragStart(e) {
+    if (!lightbox.classList.contains('on')) return;
+    if (scale <= SCALE_MIN + 0.001) return;
+
+    dragging = true;
+    movedDuringDrag = false;
+    lightbox.classList.add('dragging');
+
+    var point = e.touches ? e.touches[0] : e;
+    dragStartX = point.clientX;
+    dragStartY = point.clientY;
+    dragStartPanX = panX;
+    dragStartPanY = panY;
+  }
+
+  function onDragMove(e) {
+    if (!dragging) return;
+    var point = e.touches ? e.touches[0] : e;
+    var dx = point.clientX - dragStartX;
+    var dy = point.clientY - dragStartY;
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+      movedDuringDrag = true;
+    }
+    panX = dragStartPanX + dx;
+    panY = dragStartPanY + dy;
+    applyTransform();
+    if (e.cancelable) e.preventDefault();
+  }
+
+  function onDragEnd() {
+    if (!dragging) return;
+    dragging = false;
+    lightbox.classList.remove('dragging');
+    setTimeout(function () { movedDuringDrag = false; }, 60);
+  }
+
+  lightbox.addEventListener('mousedown', onDragStart);
+  document.addEventListener('mousemove', onDragMove);
+  document.addEventListener('mouseup', onDragEnd);
+
+  lightbox.addEventListener('touchstart', onDragStart, { passive: true });
+  document.addEventListener('touchmove', onDragMove, { passive: false });
+  document.addEventListener('touchend', onDragEnd);
+  document.addEventListener('touchcancel', onDragEnd);
+
+  lightbox.addEventListener('dblclick', function (e) {
+    if (!lightbox.classList.contains('on')) return;
+    e.preventDefault();
+    resetView();
+  });
+
+  /* ============================================================
+     模态框
+     ============================================================ */
+  var overlay = document.getElementById('modalOverlay');
+  var mTitle  = document.getElementById('modalTitle');
+  var mBody   = document.getElementById('modalBody');
+  var mClose  = document.getElementById('modalClose');
+
+  function openModal(title, html) {
+    mTitle.textContent = title || '提示';
+    mBody.innerHTML = html;
+    overlay.classList.add('on');
+  }
+  function closeModal() { overlay.classList.remove('on'); }
+
+  mClose.addEventListener('click', closeModal);
+  overlay.addEventListener('click', function (e) {
+    if (e.target === overlay) closeModal();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && overlay.classList.contains('on')) closeModal();
+  });
+
+  Array.prototype.forEach.call(
+    document.querySelectorAll('[data-modal]'),
+    function (el) {
+      el.addEventListener('click', function (e) {
+        e.preventDefault();
+        openModal('提示', el.getAttribute('data-modal'));
+      });
+    }
+  );
+
+  /* ============================================================
+     假加载
+     ============================================================ */
+  setTimeout(function () {
+    document.getElementById('wrap').classList.add('loaded');
+    document.getElementById('boot').classList.add('gone');
+  }, 700);
+
+})();
+</script>
+
+</body>
+</html>

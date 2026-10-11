@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>　</title>
+<style>
+  :root{
+    --ink: #6A6A6A;
+    --ink-dim: #4A4A4A;
+  }
+
+  *{ box-sizing: border-box; }
+
+  html, body{
+    margin: 0;
+    padding: 0;
+    background: #000;
+  }
+
+  body{
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    font-family: "Songti SC", "SimSun", "STSong", "Songti TC",
+                 "Noto Serif SC", "Source Han Serif SC", serif;
+    color: var(--ink);
+    transition: opacity 1s ease;
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body.ready{ cursor: pointer; }
+
+  /* margin:auto 在 flex 中做安全居中：内容再长也能正常滚动，不会被裁掉顶部 */
+  #stage{
+    margin: auto;
+    padding: 12vh 7vw;
+    width: min(620px, 100%);
+    text-align: center;
+    transition: opacity 1s ease;
+  }
+
+  .block{
+    margin: 0 0 2.6em;
+    white-space: pre-line;
+    line-height: 2.3;
+    letter-spacing: .06em;
+    font-size: clamp(13px, 3.4vw, 15.5px);
+    opacity: 0;
+    transition: opacity 1.5s ease;
+  }
+  .block:last-of-type{ margin-bottom: 2.2em; }
+
+  #enter{
+    margin: 0;
+    line-height: 2.2;
+    font-size: clamp(11px, 2.8vw, 12px);
+    letter-spacing: .35em;
+    text-indent: .35em;      /* 抵消 letter-spacing 造成的视觉偏移 */
+    color: var(--ink-dim);
+    opacity: 0;
+    transition: opacity 1.5s ease;
+  }
+</style>
+
+<!-- 兜底：若浏览器禁用/拦截了 JS，文字直接可见，不会白屏 -->
+<noscript>
+  <style>.block, #enter{ opacity: 1 !important; }</style>
+</noscript>
+</head>
+
+<body>
+
+  <div id="stage">
+    <div class="block" id="p1"></div>
+    <div class="block" id="p2"></div>
+    <div class="block" id="p3"></div>
+    <div id="enter">（点击进入）</div>
+  </div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ---------------- 文本 ---------------- */
+
+  var TEXTS = [
+    '你小时候有没有玩过一个游戏。\n\n' +
+    '一个人站在门里，一个人站在门外。\n' +
+    '门里那个人把眼睛贴在猫眼上。\n' +
+    '门外那个人把眼睛也贴上来。\n\n' +
+    '然后两个人都不动，等着对方先眨眼。\n\n' +
+    '大人们说，这个游戏不能玩。\n' +
+    '不是因为无聊。\n' +
+    '是因为，你永远不知道，\n' +
+    '猫眼另一头贴着的，\n' +
+    '是不是你认识的那个人。',
+
+    '你忘了这件事很多年了。\n\n' +
+    '直到今天凌晨，03:47，\n' +
+    '一封陌生的邮件找到了你。',
+
+    '发件人：unknown@mail.****\n' +
+    ' '
+  ];
+
+  var blocks = [
+    document.getElementById('p1'),
+    document.getElementById('p2'),
+    document.getElementById('p3')
+  ];
+
+  var stage = document.getElementById('stage');
+  var enter = document.getElementById('enter');
+
+  blocks.forEach(function (el, i) {
+    el.textContent = TEXTS[i];
+  });
+
+  var ready   = false;
+  var leaving = false;
+
+  function reveal(el) { el.style.opacity = '1'; }
+
+  /* ---------------- 时间轴 ----------------
+     t = 5s   第一段
+     t = 10s  第二段
+     t = 13s  第三段
+     t = 16s  （点击进入）→ 整页可点
+     每段淡入 1.5s
+  ------------------------------------------- */
+
+  setTimeout(function () { reveal(blocks[0]); },  5000);
+  setTimeout(function () { reveal(blocks[1]); }, 10000);
+  setTimeout(function () { reveal(blocks[2]); }, 13000);
+
+  setTimeout(function () {
+    reveal(enter);
+    ready = true;
+    document.body.classList.add('ready');
+  }, 16000);
+
+  /* ---------------- 跳转：淡出 1s → P01 ---------------- */
+
+  function go() {
+    if (!ready || leaving) return;
+    leaving = true;
+
+    stage.style.opacity = '0';
+    document.body.style.opacity = '0';
+
+    setTimeout(function () {
+      window.location.href = 'index.html';   // P01 邮件页
+    }, 1000);
+  }
+
+  document.addEventListener('click', go);
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
+      e.preventDefault();
+      go();
+    }
+  });
+
+  /* ---------------- 可选底噪：极轻的日光灯电流声，约 5% ---------------- */
+
+  var actx = null;
+
+  function initAudio() {
+    if (actx) {
+      if (actx.state === 'suspended') { actx.resume().catch(function () {}); }
+      return;
+    }
+
+    var AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+
+    try {
+      var ctx = new AC();
+      actx = ctx;
+
+      var master = ctx.createGain();
+      master.gain.value = 0;               // 从 0 缓慢淡入到 5%
+      master.connect(ctx.destination);
+
+      var bus = ctx.createGain();
+      bus.gain.value = 1;
+      bus.connect(master);
+
+      // 100Hz 基频
+      var o1 = ctx.createOscillator();
+      o1.type = 'sine';
+      o1.frequency.value = 100;
+      var g1 = ctx.createGain();
+      g1.gain.value = 0.5;
+      o1.connect(g1); g1.connect(bus);
+
+      // 200Hz 泛音
+      var o2 = ctx.createOscillator();
+      o2.type = 'sine';
+      o2.frequency.value = 200;
+      var g2 = ctx.createGain();
+      g2.gain.value = 0.14;
+      o2.connect(g2); g2.connect(bus);
+
+      // 高频电流噪声
+      var len = Math.floor(ctx.sampleRate * 2);
+      var buf = ctx.createBuffer(1, len, ctx.sampleRate);
+      var d = buf.getChannelData(0);
+      for (var i = 0; i < len; i++) { d[i] = Math.random() * 2 - 1; }
+
+      var noise = ctx.createBufferSource();
+      noise.buffer = buf;
+      noise.loop = true;
+
+      var bp = ctx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.value = 4200;
+      bp.Q.value = 0.8;
+
+      var ng = ctx.createGain();
+      ng.gain.value = 0.035;
+
+      noise.connect(bp); bp.connect(ng); ng.connect(bus);
+
+      // 极缓慢起伏，让它「活」着
+      var lfo = ctx.createOscillator();
+      lfo.frequency.value = 0.09;
+      var lfoGain = ctx.createGain();
+      lfoGain.gain.value = 0.12;
+      lfo.connect(lfoGain); lfoGain.connect(bus.gain);
+
+      var t = ctx.currentTime;
+      o1.start(t); o2.start(t); noise.start(t); lfo.start(t);
+
+      // 5% 音量，5 秒淡入
+      master.gain.setValueAtTime(0, t);
+      master.gain.linearRampToValueAtTime(0.05, t + 5);
+
+      if (ctx.state === 'suspended') { ctx.resume().catch(function () {}); }
+
+    } catch (e) { /* 音频不可用时静默忽略，不影响流程 */ }
+  }
+
+  // 先尝试自动播放；被浏览器拦截则等首次交互
+  initAudio();
+
+  ['pointerdown', 'keydown', 'touchstart'].forEach(function (ev) {
+    window.addEventListener(ev, function once() {
+      initAudio();
+      window.removeEventListener(ev, once);
+    }, { once: true, passive: true });
+  });
+
+})();
+</script>
+</body>
+</html>

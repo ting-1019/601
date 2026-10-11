@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=980">
+<title>老周的博客</title>
+<style>
+/* ==========================================================
+   全局
+   ========================================================== */
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: #FFFFFF;
+}
+
+body {
+  font-family: "Songti SC", "SimSun", "STSong", "Songti TC",
+               "Noto Serif SC", "Source Han Serif SC", serif;
+  font-size: 14px;
+  line-height: 1.7;
+  color: #333;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+a {
+  color: #21759B;
+  text-decoration: none;
+  cursor: pointer;
+}
+a:hover {
+  color: #0F3647;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* ==========================================================
+   假加载（和游戏其他页保持一致）
+   ========================================================== */
+#boot {
+  position: fixed; inset: 0;
+  background: #FFFFFF;
+  z-index: 9999;
+  transition: opacity 0.55s ease;
+}
+#boot.gone { opacity: 0; pointer-events: none; }
+
+.wrap { opacity: 0; transition: opacity 0.9s ease; }
+.wrap.loaded { opacity: 1; }
+
+/* 极淡的噪点，让白色不至于太“新” */
+.noise {
+  position: fixed; inset: 0;
+  z-index: 9000;
+  pointer-events: none;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/></filter><rect width='220' height='220' filter='url(%23n)'/></svg>");
+}
+
+/* ==========================================================
+   WordPress Twenty Twelve · 页头
+   ========================================================== */
+.site-header {
+  background: #FFFFFF;
+  border-bottom: 1px solid #EAEAEA;
+  padding: 30px 0 26px;
+}
+.site-header-inner {
+  width: 720px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.site-title {
+  margin: 0 0 6px;
+  font-family: "Microsoft YaHei", "Helvetica Neue", sans-serif;
+  font-size: 26px;
+  font-weight: 300;
+  letter-spacing: 0.02em;
+  color: #2B2B2B;
+  line-height: 1.3;
+}
+.site-title a {
+  color: #2B2B2B;
+  text-decoration: none;
+}
+.site-title a:hover { color: #21759B; text-decoration: none; }
+
+.site-description {
+  margin: 0;
+  font-size: 13px;
+  color: #9A9A9A;
+  letter-spacing: 0.02em;
+  font-style: italic;
+}
+
+/* ==========================================================
+   主内容区
+   ========================================================== */
+.main {
+  width: 720px;
+  margin: 0 auto;
+  padding: 32px 20px 60px;
+}
+
+/* 文章列表头部 */
+.posts-head {
+  font-family: "Microsoft YaHei", sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  color: #B8B8B8;
+  border-bottom: 1px solid #EAEAEA;
+  padding-bottom: 10px;
+  margin-bottom: 4px;
+}
+
+/* ==========================================================
+   文章条目（在列表里）
+   ========================================================== */
+.post-item {
+  border-bottom: 1px solid #EAEAEA;
+  padding: 18px 0 16px;
+}
+.post-item:last-of-type { border-bottom: 0; }
+
+.post-item .pi-meta {
+  font-family: "Microsoft YaHei", sans-serif;
+  font-size: 11.5px;
+  letter-spacing: 0.08em;
+  color: #9A9A9A;
+  margin-bottom: 4px;
+}
+.post-item .pi-meta .date {
+  font-family: "Courier New", monospace;
+  color: #8A8A8A;
+}
+
+.post-item .pi-title {
+  margin: 0 0 4px;
+  font-size: 18px;
+  font-weight: bold;
+  letter-spacing: 0.02em;
+  line-height: 1.5;
+}
+.post-item .pi-title a {
+  color: #21759B;
+}
+.post-item .pi-title a:hover {
+  color: #0F3647;
+}
+.post-item .pi-title.locked a {
+  color: #9A9A9A;
+}
+
+.post-item .pi-desc {
+  font-size: 13px;
+  color: #8A8A8A;
+  line-height: 1.75;
+  letter-spacing: 0.02em;
+}
+
+/* 展开箭头 */
+.pi-arrow {
+  display: inline-block;
+  margin-left: 6px;
+  font-family: "Tahoma", sans-serif;
+  font-size: 11px;
+  color: #B8B8B8;
+  transition: transform 0.3s ease;
+  vertical-align: 2px;
+}
+.pi-arrow.open { transform: rotate(90deg); }
+
+/* 加密图标 */
+.pi-lock {
+  display: inline-block;
+  margin-left: 6px;
+  font-family: "Microsoft YaHei", sans-serif;
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  color: #B8B8B8;
+  border: 1px solid #DCDCDC;
+  padding: 0 5px;
+  line-height: 15px;
+  vertical-align: 2px;
+  border-radius: 2px;
+}
+
+/* ==========================================================
+   展开的文章正文
+   ========================================================== */
+.post-body {
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transition: max-height 0.6s ease, opacity 0.45s ease,
+              margin-top 0.4s ease, padding-top 0.4s ease;
+  margin-top: 0;
+  padding-top: 0;
+}
+.post-body.on {
+  max-height: 1200px;
+  opacity: 1;
+  margin-top: 14px;
+  padding-top: 16px;
+  border-top: 1px dashed #E5E5E5;
+}
+
+.post-body-content {
+  font-family: "Songti SC", "SimSun", serif;
+  font-size: 15px;
+  line-height: 2.1;
+  color: #2B2B2B;
+  letter-spacing: 0.02em;
+  white-space: pre-line;
+}
+
+/* 文章2里的强调 */
+.post-body-content .cat-eye-em {
+  color: #8A6A2B;
+  letter-spacing: 0.1em;
+}
+
+/* 文章日期小注 */
+.post-body-date {
+  margin-top: 20px;
+  padding-top: 12px;
+  border-top: 1px dashed #EAEAEA;
+  font-family: "Microsoft YaHei", sans-serif;
+  font-size: 11.5px;
+  letter-spacing: 0.06em;
+  color: #B8B8B8;
+}
+
+/* ==========================================================
+   加密输入区（文章3）
+   ========================================================== */
+.lock-panel {
+  margin-top: 14px;
+  padding: 20px 22px 22px;
+  background: #FAFAFA;
+  border: 1px solid #EAEAEA;
+  border-left: 3px solid #DCDCDC;
+}
+
+.lock-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.lock-label {
+  font-family: "Microsoft YaHei", sans-serif;
+  font-size: 12.5px;
+  letter-spacing: 0.08em;
+  color: #6A6A6A;
+  white-space: nowrap;
+}
+.lock-input {
+  flex: 1 1 auto;
+  max-width: 200px;
+  padding: 6px 10px;
+  font-family: "Courier New", monospace;
+  font-size: 14px;
+  color: #2B2B2B;
+  background: #FFFFFF;
+  border: 1px solid #D5D5D5;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+.lock-input:focus {
+  border-color: #21759B;
+}
+
+.lock-btn {
+  padding: 6px 16px;
+  font-family: "Microsoft YaHei", sans-serif;
+  font-size: 12.5px;
+  letter-spacing: 0.06em;
+  color: #FFFFFF;
+  background: #21759B;
+  border: 1px solid #1A5C7A;
+  cursor: pointer;
+  transition: background 0.18s ease;
+}
+.lock-btn:hover { background: #1A5C7A; }
+.lock-btn:active { background: #144A62; }
+
+.lock-hint {
+  margin: 8px 0 0;
+  font-family: "Microsoft YaHei", sans-serif;
+  font-size: 12px;
+  color: #9A9A9A;
+  letter-spacing: 0.04em;
+}
+
+.lock-error {
+  margin: 12px 0 0;
+  font-family: "Microsoft YaHei", sans-serif;
+  font-size: 12px;
+  color: #C0392B;
+  letter-spacing: 0.04em;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+.lock-error.on { opacity: 1; }
+
+/* 解密后的正文 */
+.decrypted {
+  display: none;
+  margin-top: 16px;
+}
+.decrypted.on { display: block; }
+
+.decrypted .post-body-content {
+  color: #2B2B2B;
+}
+.decrypted .sign {
+  margin-top: 20px;
+  padding-top: 12px;
+  border-top: 1px dashed #EAEAEA;
+  font-family: "Songti SC", "SimSun", serif;
+  font-size: 14px;
+  color: #4A4A4A;
+  letter-spacing: 0.02em;
+}
+
+/* ==========================================================
+   文章底部隐藏彩蛋
+   ========================================================== */
+.canon {
+  margin-top: 26px;
+  padding-top: 22px;
+  border-top: 1px solid #EAEAEA;
+}
+
+/* 拖选可见的隐藏文字：白底白字 */
+.hidden-text {
+  color: #FFFFFF;
+  user-select: text;
+  -webkit-user-select: text;
+  font-family: "Courier New", monospace;
+  font-size: 12px;
+  line-height: 1.9;
+  letter-spacing: 0.04em;
+}
+.hidden-text::selection {
+  background: #2B2B2B;
+  color: #FFFFFF;
+}
+.hidden-text::-moz-selection {
+  background: #2B2B2B;
+  color: #FFFFFF;
+}
+
+/* ==========================================================
+   页脚
+   ========================================================== */
+.footer {
+  border-top: 1px solid #EAEAEA;
+  background: #F7F7F7;
+  padding: 26px 0 30px;
+  margin-top: 20px;
+}
+.footer-inner {
+  width: 720px;
+  margin: 0 auto;
+  padding: 0 20px;
+  text-align: center;
+  font-family: "Microsoft YaHei", sans-serif;
+  font-size: 11.5px;
+  letter-spacing: 0.06em;
+  color: #9A9A9A;
+  line-height: 2;
+}
+.footer-inner a {
+  color: #8A8A8A;
+  text-decoration: none;
+}
+.footer-inner a:hover {
+  color: #21759B;
+  text-decoration: underline;
+}
+.footer-inner .sep {
+  color: #C8C8C8;
+  margin: 0 6px;
+}
+
+/* ==========================================================
+   模态框（沿用游戏风格，但这是外部站，会不太一样）
+   ========================================================== */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(20, 30, 40, 0.35);
+  z-index: 1000;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+.modal-overlay.on { opacity: 1; pointer-events: auto; }
+
+.modal {
+  background: #FFFFFF;
+  border: 1px solid #93AEC9;
+  min-width: 300px; max-width: 460px;
+  box-shadow: 0 6px 22px rgba(20, 30, 40, 0.3);
+  transform: translateY(-6px);
+  transition: transform 0.2s ease;
+}
+.modal-overlay.on .modal { transform: translateY(0); }
+
+.modal-head {
+  background: linear-gradient(180deg, #E6EFF6 0%, #D0E0ED 100%);
+  border-bottom: 1px solid #93AEC9;
+  padding: 7px 12px;
+  font-family: "Microsoft YaHei", sans-serif;
+  font-size: 12px; color: #2B4F6E;
+  display: flex; justify-content: space-between; align-items: center;
+  font-weight: bold; letter-spacing: 0.05em;
+}
+.modal-close {
+  cursor: pointer; color: #5A7A9A;
+  font-size: 15px; line-height: 1;
+  padding: 0 4px; font-weight: normal;
+}
+.modal-close:hover { color: #C03A2B; }
+
+.modal-body {
+  padding: 18px 22px;
+  font-size: 13px;
+  line-height: 2;
+  color: #333;
+}
+.modal-body .muted { color: #9AA8B4; font-style: italic; }
+</style>
+</head>
+
+<body>
+
+<div id="boot"></div>
+<div class="noise"></div>
+
+<div class="wrap" id="wrap">
+
+  <!-- ============ 站点头部 ============ -->
+  <header class="site-header">
+    <div class="site-header-inner">
+      <h1 class="site-title">
+        <a href="#" id="siteTitle">老周的博客</a>
+      </h1>
+      <p class="site-description">记录一些说不清的事</p>
+    </div>
+  </header>
+
+  <!-- ============ 主内容 ============ -->
+  <main class="main">
+
+    <div class="posts-head">最 近 的 文 章</div>
+
+    <!-- ============ 文章 1 ============ -->
+    <article class="post-item" id="post1">
+      <div class="pi-meta">
+        <span class="date">2013-06-10</span>
+      </div>
+      <h2 class="pi-title">
+        <a href="#" data-post="1">《这栋楼没有七楼》<span class="pi-arrow" id="arrow1">›</span></a>
+      </h2>
+      <p class="pi-desc">我住在这栋楼二十年了……</p>
+
+      <!-- 展开区 -->
+      <div class="post-body" id="body1">
+        <div class="post-body-content">我住在这栋楼二十年了。
+3号楼，502。
+
+最近我发现一件事。
+这栋楼没有七楼。
+
+但是，如果你从一楼开始数，
+一层一层往上数，
+你会数到第七层。
+
+第七层就在六楼上面。
+
+我上去过一次。
+上面什么都没有。
+只有一扇门。
+
+门牌号是 601。</div>
+        <div class="post-body-date">发布于 2013-06-10 · 分类：随笔</div>
+      </div>
+    </article>
+
+    <!-- ============ 文章 2 ============ -->
+    <article class="post-item" id="post2">
+      <div class="pi-meta">
+        <span class="date">2013-06-12</span>
+      </div>
+      <h2 class="pi-title">
+        <a href="#" data-post="2">《关于猫眼的一些事》<span class="pi-arrow" id="arrow2">›</span></a>
+      </h2>
+      <p class="pi-desc">猫眼是单向的，但有一种情况例外……</p>
+
+      <div class="post-body" id="body2">
+        <div class="post-body-content">猫眼是单向的。
+你从里面看外面，外面看不见你。
+
+但有一种情况例外。
+
+如果外面的人，
+也把眼睛贴在猫眼上，
+你们就会对上。
+
+这时候，
+猫眼就不再是单向的了。
+
+你看它的同时，
+它也在看你。
+
+你看它多久，
+它就看你多久。
+
+<span class="cat-eye-em">你看了三次，
+它就记住你了。</span></div>
+        <div class="post-body-date">发布于 2013-06-12 · 分类：随笔</div>
+      </div>
+    </article>
+
+    <!-- ============ 文章 3（加密） ============ -->
+    <article class="post-item" id="post3">
+      <div class="pi-meta">
+        <span class="date">2013-06-14</span>
+      </div>
+      <h2 class="pi-title locked">
+        <a href="#" data-post="3">（已加密）<span class="pi-lock">密码保护</span></a>
+      </h2>
+      <p class="pi-desc">这篇文章受密码保护，请输入密码后查看。</p>
+
+      <!-- 密码输入区 -->
+      <div class="lock-panel" id="lockPanel">
+        <div class="lock-row">
+          <span class="lock-label">输入密码：</span>
+          <input type="text" class="lock-input" id="lockInput"
+                 inputmode="numeric" maxlength="6" autocomplete="off"
+                 aria-label="密码">
+          <button class="lock-btn" id="lockBtn" type="button">提交</button>
+        </div>
+        <p class="lock-hint">提示：这栋楼有几层？</p>
+        <p class="lock-error" id="lockError">密码错误。</p>
+      </div>
+
+      <!-- 解密后正文 -->
+      <div class="decrypted" id="decrypted">
+        <div class="post-body-content">2013-06-14
+
+我知道我时间不多了。
+
+我数了三次。
+第一次，我数到七楼，看到了601。
+第二次，我数到七楼，601的门开了。
+第三次，我数到七楼，我发现我在601里面。
+
+我不该数的。
+但已经晚了。
+
+如果你在读这篇文章，
+说明你也在数。
+
+停下来。
+不要再看了。</div>
+        <div class="sign">—— 老周</div>
+        <div class="post-body-date">发布于 2013-06-14 · 分类：随笔 · 阅读密码已通过</div>
+      </div>
+    </article>
+
+    <!-- ============ 隐藏彩蛋 ============ -->
+    <div class="canon">
+      <div class="hidden-text" id="easterText">彩蛋1：老周没有消失。他只是去了601。</div>
+    </div>
+
+  </main>
+
+  <!-- ============ 页脚 ============ -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <a href="#">老周的博客</a>
+      <span class="sep">·</span>
+      <a href="#" data-modal="留言功能已关闭。">留言</a>
+      <span class="sep">·</span>
+      <a href="#" data-modal="该页面已无法访问。">关于</a>
+      <br>
+      自豪地采用 WordPress　·　Twenty Twelve 主题
+    </div>
+  </footer>
+
+</div>
+
+<!-- 模态框 -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" role="dialog">
+    <div class="modal-head">
+      <span id="modalTitle">提示</span>
+      <span class="modal-close" id="modalClose">✕</span>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ---------- 假加载 ---------- */
+  setTimeout(function () {
+    document.getElementById('wrap').classList.add('loaded');
+    document.getElementById('boot').classList.add('gone');
+  }, 700);
+
+  /* ---------- 模态框 ---------- */
+  var overlay = document.getElementById('modalOverlay');
+  var mTitle  = document.getElementById('modalTitle');
+  var mBody   = document.getElementById('modalBody');
+  var mClose  = document.getElementById('modalClose');
+
+  function openModal(title, html) {
+    mTitle.textContent = title || '提示';
+    mBody.innerHTML = html;
+    overlay.classList.add('on');
+  }
+  function closeModal() { overlay.classList.remove('on'); }
+
+  mClose.addEventListener('click', closeModal);
+  overlay.addEventListener('click', function (e) {
+    if (e.target === overlay) closeModal();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeModal();
+  });
+
+  Array.prototype.forEach.call(
+    document.querySelectorAll('[data-modal]'),
+    function (el) {
+      el.addEventListener('click', function (e) {
+        e.preventDefault();
+        openModal('提示', el.getAttribute('data-modal'));
+      });
+    }
+  );
+
+  /* ============================================================
+     文章 1、2 的展开 / 收起
+     ============================================================ */
+  function bindToggle(postId) {
+    var titleLink = document.querySelector('[data-post="' + postId + '"]');
+    var body      = document.getElementById('body' + postId);
+    var arrow     = document.getElementById('arrow' + postId);
+
+    if (!titleLink || !body) return;
+
+    titleLink.addEventListener('click', function (e) {
+      e.preventDefault();
+      var on = body.classList.toggle('on');
+      if (arrow) arrow.classList.toggle('open', on);
+    });
+  }
+
+  bindToggle(1);
+  bindToggle(2);
+
+  /* ============================================================
+     文章 3：密码解锁
+     ============================================================ */
+  var LOCK_PASSWORD = '7';
+
+  var lockPanel = document.getElementById('lockPanel');
+  var lockInput = document.getElementById('lockInput');
+  var lockBtn   = document.getElementById('lockBtn');
+  var lockError = document.getElementById('lockError');
+  var decrypted = document.getElementById('decrypted');
+  var arrow3    = document.getElementById('arrow3');
+
+  /* 点击文章 3 的标题时，先聚焦到输入框（如果是初始状态） */
+  var title3 = document.querySelector('[data-post="3"]');
+  if (title3) {
+    title3.addEventListener('click', function (e) {
+      e.preventDefault();
+      if (!decrypted.classList.contains('on')) {
+        lockInput.focus();
+      }
+    });
+  }
+
+  /* 输入变化时，清除错误提示 */
+  lockInput.addEventListener('input', function () {
+    lockError.classList.remove('on');
+  });
+
+  /* 提交 */
+  function tryUnlock() {
+    var val = lockInput.value.trim();
+    if (val === LOCK_PASSWORD) {
+      // 正确：隐藏输入区，显示正文
+      lockPanel.style.display = 'none';
+      decrypted.classList.add('on');
+
+      // 文章标题的“已加密”改成正常样式
+      var title3H2 = title3.closest('.pi-title');
+      if (title3H2) title3H2.classList.remove('locked');
+
+      // 滚动到正文区域
+      setTimeout(function () {
+        var rect = decrypted.getBoundingClientRect();
+        if (rect.top < 0 || rect.bottom > window.innerHeight) {
+          decrypted.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 300);
+
+    } else {
+      // 错误：显示提示
+      lockError.classList.add('on');
+      lockInput.select();
+    }
+  }
+
+  lockBtn.addEventListener('click', tryUnlock);
+  lockInput.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      tryUnlock();
+    }
+  });
+
+  /* ============================================================
+     站点标题点击：回到顶部（不刷新）
+     ============================================================ */
+  document.getElementById('siteTitle').addEventListener('click', function (e) {
+    e.preventDefault();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+})();
+</script>
+
+</body>
+</html>
