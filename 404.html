@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>404 Not Found</title>
+<style>
+/* ==========================================================
+   全局
+   ========================================================== */
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: #FFFFFF;
+  min-height: 100%;
+}
+
+body {
+  font-family: "Songti SC", "SimSun", "STSong", "Songti TC",
+               "Noto Serif SC", "Source Han Serif SC", serif;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #2B2B2B;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+a {
+  color: #3A5A8C;
+  text-decoration: none;
+  cursor: pointer;
+}
+a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ==========================================================
+   假加载（与其它页保持一致）
+   ========================================================== */
+#boot {
+  position: fixed; inset: 0;
+  background: #FFFFFF;
+  z-index: 9999;
+  transition: opacity 0.55s ease;
+}
+#boot.gone {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ==========================================================
+   主内容
+   ========================================================== */
+.wrap {
+  opacity: 0;
+  transition: opacity 0.9s ease;
+  text-align: center;
+  max-width: 520px;
+  width: 100%;
+  padding: 40px 20px 60px;
+}
+.wrap.loaded { opacity: 1; }
+
+/* 404 数字 */
+.err-code {
+  margin: 0 0 24px;
+  font-family: "Helvetica Neue", "Helvetica", "Arial", sans-serif;
+  font-size: 84px;
+  font-weight: 200;
+  letter-spacing: 0.08em;
+  color: #2B2B2B;
+  line-height: 1;
+}
+
+/* 主信息 */
+.err-msg {
+  margin: 0 0 40px;
+  font-size: 15px;
+  letter-spacing: 0.06em;
+  color: #6A6A6A;
+  line-height: 1.9;
+}
+
+/* 返回链接 */
+.back-link {
+  display: inline-block;
+  padding: 8px 26px;
+  font-family: "Microsoft YaHei", sans-serif;
+  font-size: 13px;
+  letter-spacing: 0.14em;
+  color: #3A5A8C;
+  border: 1px solid #D8E0EA;
+  background: #FAFCFE;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+.back-link:hover {
+  background: #F0F4F9;
+  border-color: #B8C8D8;
+  text-decoration: none;
+  color: #2B4F6E;
+}
+
+/* ==========================================================
+   底部隐藏行
+   ========================================================== */
+.hidden-zone {
+  margin-top: 90px;
+  font-size: 13px;
+  line-height: 2;
+  letter-spacing: 0.04em;
+}
+
+/* 与背景同色的隐藏文字 */
+.hidden-text {
+  color: #F5F3EE;
+  user-select: text;
+  -webkit-user-select: text;
+  font-family: "Courier New", "SimSun", monospace;
+  letter-spacing: 0.03em;
+}
+.hidden-text::selection {
+  background: #2B2B2B;
+  color: #F5F3EE;
+}
+.hidden-text::-moz-selection {
+  background: #2B2B2B;
+  color: #F5F3EE;
+}
+
+/* 隐藏区里的链接：也藏在背景色里，拖选后反白 */
+.hidden-text a {
+  color: #F5F3EE;
+  text-decoration: none;
+  cursor: pointer;
+  font-family: "Courier New", "SimSun", monospace;
+}
+.hidden-text a:hover {
+  text-decoration: none;
+}
+.hidden-text a::selection {
+  background: #2B2B2B;
+  color: #F5F3EE;
+}
+.hidden-text a::-moz-selection {
+  background: #2B2B2B;
+  color: #F5F3EE;
+}
+
+/* ==========================================================
+   极淡的噪点，保持与其他页质感一致
+   ========================================================== */
+.noise {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  pointer-events: none;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/></filter><rect width='220' height='220' filter='url(%23n)'/></svg>");
+}
+</style>
+</head>
+
+<body>
+
+<div id="boot"></div>
+<div class="noise"></div>
+
+<div class="wrap" id="wrap">
+
+  <h1 class="err-code">404</h1>
+
+  <p class="err-msg">抱歉，您访问的页面不存在。</p>
+
+  <a class="back-link" href="bbs/index.html" id="backHome">返回首页</a>
+
+  <!-- 隐藏行 -->
+  <div class="hidden-zone">
+    <span class="hidden-text">您是不是在找：<a href="resident/601.html" id="hiddenLink">/resident/601</a></span>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ---------- 假加载 ---------- */
+  setTimeout(function () {
+    document.getElementById('wrap').classList.add('loaded');
+    document.getElementById('boot').classList.add('gone');
+  }, 650);
+
+  /* ============================================================
+     隐藏链接：确保在拖选状态下依然可点击
+     —— 因为它是同色文字，很多玩家会先拖选再点
+     ============================================================ */
+  var hiddenLink = document.getElementById('hiddenLink');
+
+  hiddenLink.addEventListener('click', function (e) {
+    // 使用默认跳转行为，但停止事件冒泡，避免被其它元素拦截
+    e.stopPropagation();
+  });
+
+  /* ============================================================
+     一个小细节：如果玩家在页面上按了任意键，
+     除了 Enter 跳首页外，没有别的动作。
+     —— 保持这一页的“空”。
+     ============================================================ */
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      window.location.href = 'bbs/index.html';
+    }
+  });
+
+})();
+</script>
+
+</body>
+</html>

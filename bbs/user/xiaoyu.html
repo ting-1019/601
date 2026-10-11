@@ -1,0 +1,1221 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=980">
+<title>小雨转晴 - 平安里社区</title>
+<style>
+/* ==========================================================
+   全局
+   ========================================================== */
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: #E8ECEF;
+}
+
+body {
+  font-family: "Songti SC", "SimSun", "STSong", "Songti TC",
+               "Noto Serif SC", "Source Han Serif SC", serif;
+  font-size: 12px;
+  line-height: 1.6;
+  color: #333;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+a {
+  color: #3A5A8C;
+  text-decoration: none;
+  cursor: pointer;
+}
+a:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* ==========================================================
+   假加载 / 噪点
+   ========================================================== */
+#boot {
+  position: fixed; inset: 0;
+  background: #FFFFFF;
+  z-index: 9999;
+  transition: opacity 0.55s ease;
+}
+#boot.gone { opacity: 0; pointer-events: none; }
+
+.wrap { opacity: 0; transition: opacity 0.9s ease; }
+.wrap.loaded { opacity: 1; }
+
+.noise {
+  position: fixed; inset: 0;
+  z-index: 9000;
+  pointer-events: none;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/></filter><rect width='220' height='220' filter='url(%23n)'/></svg>");
+}
+
+/* ==========================================================
+   顶部小工具栏
+   ========================================================== */
+.topbar {
+  background: #2F3D4C;
+  height: 28px;
+  font-family: "Microsoft YaHei", "Tahoma", sans-serif;
+  font-size: 12px;
+  color: #B7C2CC;
+  line-height: 28px;
+}
+.topbar-inner {
+  width: 960px; margin: 0 auto;
+  display: flex; justify-content: space-between;
+}
+.topbar a { color: #B7C2CC; text-decoration: none; }
+.topbar a:hover { color: #FFFFFF; text-decoration: none; }
+.topbar .sp { margin: 0 8px; color: #536273; }
+
+/* ==========================================================
+   页头
+   ========================================================== */
+.header {
+  background: #FFFFFF;
+  border-bottom: 1px solid #D5DDE4;
+}
+.header-inner {
+  width: 960px; margin: 0 auto;
+  height: 90px; display: flex; align-items: center;
+}
+.logo-block { display: flex; align-items: baseline; gap: 14px; }
+.logo-block h1 {
+  margin: 0; font-size: 28px; font-weight: bold;
+  letter-spacing: 0.06em; color: #2B4F6E;
+}
+.logo-block .slogan {
+  font-size: 12px; color: #9AA8B4; letter-spacing: 0.04em;
+}
+.search { margin-left: auto; display: flex; }
+.search input {
+  width: 190px; height: 28px; padding: 0 8px;
+  border: 1px solid #C5CFD8; border-right: 0;
+  background: #FAFCFD;
+  font-family: "Microsoft YaHei", sans-serif;
+  font-size: 12px; color: #333; outline: none;
+}
+.search input:focus { border-color: #8FAFC8; background: #FFFFFF; }
+.search button {
+  height: 28px; padding: 0 16px;
+  border: 1px solid #6A8BAC;
+  background: linear-gradient(180deg, #8DA9C2, #6A8BAC);
+  color: #FFFFFF;
+  font-family: "Microsoft YaHei", sans-serif;
+  font-size: 12px; letter-spacing: 0.1em; cursor: pointer;
+}
+.search button:hover { background: linear-gradient(180deg, #7E9CB7, #5D7FA1); }
+
+/* ==========================================================
+   主导航
+   ========================================================== */
+.main-nav {
+  background: linear-gradient(180deg, #5C7C9A 0%, #4A6C8C 100%);
+  height: 38px;
+  border-bottom: 3px solid #3A5A7C;
+}
+.main-nav-inner {
+  width: 960px; margin: 0 auto;
+  display: flex; height: 100%;
+}
+.main-nav a {
+  display: flex; align-items: center;
+  padding: 0 26px;
+  color: #DCE6EE;
+  font-family: "Microsoft YaHei", sans-serif;
+  font-size: 14px; letter-spacing: 0.08em;
+  text-decoration: none;
+  border-right: 1px solid rgba(255,255,255,0.06);
+  height: 100%;
+}
+.main-nav a:hover {
+  background: rgba(255,255,255,0.08);
+  text-decoration: none; color: #FFFFFF;
+}
+.main-nav a.active {
+  background: #3E5C7A; color: #FFFFFF; font-weight: bold;
+}
+
+/* ==========================================================
+   容器
+   ========================================================== */
+.container {
+  width: 960px; margin: 0 auto;
+  padding: 14px 0 30px;
+}
+
+/* ==========================================================
+   面包屑
+   ========================================================== */
+.crumb {
+  padding: 8px 12px;
+  background: #F2F5F7;
+  border: 1px solid #D9E0E6;
+  font-size: 12px; color: #666;
+  margin-bottom: 12px;
+}
+.crumb .arrow { color: #A0A8B0; margin: 0 6px; }
+.crumb strong { color: #333; font-weight: normal; }
+
+/* ==========================================================
+   个人资料卡
+   ========================================================== */
+.profile-card {
+  background: #FFFFFF;
+  border: 1px solid #C5D3DE;
+}
+
+.profile-header {
+  padding: 14px 20px;
+  background: linear-gradient(180deg, #F7FAFC 0%, #EAF0F5 100%);
+  border-bottom: 1px solid #C5D3DE;
+}
+.profile-header .p-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: bold;
+  color: #2B4F6E;
+  letter-spacing: 0.04em;
+}
+
+.profile-body {
+  display: flex;
+  align-items: flex-start;
+  padding: 24px 20px 26px;
+  gap: 28px;
+}
+
+/* ---------- 左侧：大头像 ---------- */
+.avatar-col {
+  flex: 0 0 300px;
+  text-align: center;
+}
+
+/* 走廊照片容器 */
+.avatar-large {
+  width: 300px;
+  height: 225px;
+  background: #0A0A0A;
+  border: 1px solid #B8C4CE;
+  position: relative;
+  overflow: hidden;
+  cursor: zoom-in;
+  margin: 0 auto;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+.avatar-large:hover {
+  border-color: #6A8BAC;
+  box-shadow: 0 3px 14px rgba(20, 30, 40, 0.22);
+}
+
+.avatar-large img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  z-index: 2;
+}
+
+/* 图片加载失败时的占位 */
+.avatar-fallback {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(ellipse at 50% 60%,
+      rgba(60, 58, 52, 0.9) 0%,
+      rgba(20, 20, 20, 0.95) 55%,
+      rgba(0, 0, 0, 0.98) 100%);
+  color: #3A3A3A;
+  font-family: "Microsoft YaHei", sans-serif;
+  font-size: 11.5px;
+  letter-spacing: 0.3em;
+  text-align: center;
+  line-height: 2;
+}
+.avatar-fallback::before {
+  content: "";
+  position: absolute;
+  left: 50%; top: 50%;
+  width: 140%;
+  height: 140%;
+  transform: translate(-50%, -50%);
+  background:
+    radial-gradient(circle at 50% 50%,
+      transparent 0%,
+      transparent 22%,
+      rgba(0, 0, 0, 0.5) 55%,
+      rgba(0, 0, 0, 0.95) 100%);
+  pointer-events: none;
+}
+.avatar-fallback .fb-inner {
+  position: relative;
+  z-index: 1;
+  padding: 0 20px;
+  text-shadow: 0 0 8px rgba(0, 0, 0, 0.8);
+}
+
+/* 悬停放大提示 */
+.zoom-hint {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  z-index: 3;
+  padding: 2px 8px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #DCE6EE;
+  font-family: "Microsoft YaHei", sans-serif;
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+}
+.avatar-large:hover .zoom-hint { opacity: 1; }
+
+/* 头像下方用户名 + 用户组 */
+.avatar-meta {
+  margin-top: 14px;
+}
+.avatar-meta .am-name {
+  font-size: 16px;
+  font-weight: bold;
+  color: #2B4F6E;
+  letter-spacing: 0.06em;
+  margin: 0 0 4px;
+}
+.avatar-meta .am-group {
+  font-size: 12px;
+  color: #8A98A6;
+  letter-spacing: 0.06em;
+}
+
+/* ---------- 右侧：资料表格 ---------- */
+.info-col {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-top: 4px;
+}
+
+.info-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.info-table tr {
+  border-bottom: 1px dashed #E5EAEF;
+}
+.info-table tr:last-child { border-bottom: 0; }
+.info-table th {
+  width: 110px;
+  padding: 11px 14px 11px 0;
+  text-align: left;
+  vertical-align: top;
+  font-family: "Microsoft YaHei", sans-serif;
+  font-size: 12px;
+  font-weight: normal;
+  color: #8A98A6;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+.info-table td {
+  padding: 11px 0;
+  vertical-align: top;
+  color: #2B2B2B;
+  letter-spacing: 0.02em;
+  line-height: 1.85;
+}
+.info-table td.mono {
+  font-family: "Courier New", monospace;
+  font-size: 12.5px;
+  letter-spacing: 0.04em;
+}
+.info-table td .post-link {
+  color: #3A5A8C;
+  cursor: pointer;
+  border-bottom: 1px dotted #A8C0D8;
+}
+.info-table td .post-link:hover {
+  color: #2B4F6E;
+  border-bottom-color: #3A5A8C;
+}
+.info-table td .post-count {
+  font-family: "Tahoma", sans-serif;
+  color: #C03A2B;
+  font-weight: bold;
+  padding: 0 2px;
+}
+
+/* 展开箭头 */
+.expand-arrow {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 10px;
+  color: #8A98A6;
+  transition: transform 0.25s ease;
+}
+.expand-arrow.open {
+  transform: rotate(90deg);
+}
+
+/* ==========================================================
+   签名区
+   ========================================================== */
+.signature-block {
+  margin-top: 22px;
+  padding: 18px 22px 20px;
+  background: #F7F8FA;
+  border: 1px solid #E1E6EA;
+  border-left: 3px solid #C5D3DE;
+}
+.signature-block .sg-label {
+  font-family: "Microsoft YaHei", sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.28em;
+  color: #A8B4BE;
+  margin-bottom: 8px;
+}
+.signature-block .sg-text {
+  font-family: "Songti SC", "SimSun", serif;
+  font-size: 15px;
+  line-height: 2;
+  color: #4A4A4A;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  display: inline-block;
+  padding: 2px 4px;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+.signature-block .sg-text:hover {
+  background: #EAEFF4;
+  color: #2B4F6E;
+}
+
+/* ==========================================================
+   展开的帖子区域
+   ========================================================== */
+.post-expand {
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transition: max-height 0.5s ease, opacity 0.4s ease,
+              margin-top 0.4s ease;
+  margin-top: 0;
+}
+.post-expand.on {
+  max-height: 800px;
+  opacity: 1;
+  margin-top: 12px;
+}
+
+.post-expand-inner {
+  background: #FFFFFF;
+  border: 1px solid #C5D3DE;
+  padding: 20px 24px 24px;
+}
+
+.post-expand-inner .pe-title {
+  font-size: 15px;
+  font-weight: bold;
+  color: #2B4F6E;
+  letter-spacing: 0.02em;
+  margin: 0 0 6px;
+}
+.post-expand-inner .pe-meta {
+  font-size: 11.5px;
+  color: #9AA8B4;
+  letter-spacing: 0.04em;
+  padding-bottom: 12px;
+  border-bottom: 1px dashed #E5EAEF;
+  margin-bottom: 16px;
+}
+.post-expand-inner .pe-meta .sep {
+  color: #C8D0D8;
+  margin: 0 8px;
+}
+.post-expand-inner .pe-meta .who { color: #3A5A8C; }
+.post-expand-inner .pe-content {
+  font-size: 14px;
+  line-height: 2.2;
+  color: #2B2B2B;
+  white-space: pre-line;
+  letter-spacing: 0.02em;
+}
+
+/* ==========================================================
+   页脚
+   ========================================================== */
+.footer {
+  background: #F5F3EE;
+  border-top: 1px solid #E0DCD0;
+  padding: 22px 0 30px;
+  margin-top: 10px;
+}
+.footer-inner {
+  width: 960px; margin: 0 auto;
+  text-align: center;
+  color: #8A8676; font-size: 12px; line-height: 2;
+}
+.footer-links a { color: #7A7666; margin: 0 10px; }
+.footer-links a:hover { color: #3A5A8C; }
+.footer-links .sep { color: #C5C0B0; }
+.copyright { color: #A8A496; font-size: 11.5px; margin-top: 4px; }
+
+/* ==========================================================
+   模态框
+   ========================================================== */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(20, 30, 40, 0.35);
+  z-index: 1000;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+.modal-overlay.on { opacity: 1; pointer-events: auto; }
+
+.modal {
+  background: #FFFFFF;
+  border: 1px solid #93AEC9;
+  min-width: 300px; max-width: 460px;
+  box-shadow: 0 6px 22px rgba(20, 30, 40, 0.3);
+  transform: translateY(-6px);
+  transition: transform 0.2s ease;
+}
+.modal-overlay.on .modal { transform: translateY(0); }
+
+.modal-head {
+  background: linear-gradient(180deg, #E6EFF6 0%, #D0E0ED 100%);
+  border-bottom: 1px solid #93AEC9;
+  padding: 7px 12px;
+  font-family: "Microsoft YaHei", sans-serif;
+  font-size: 12px; color: #2B4F6E;
+  display: flex; justify-content: space-between; align-items: center;
+  font-weight: bold; letter-spacing: 0.05em;
+}
+.modal-close {
+  cursor: pointer; color: #5A7A9A;
+  font-size: 15px; line-height: 1;
+  padding: 0 4px; font-weight: normal;
+}
+.modal-close:hover { color: #C03A2B; }
+
+.modal-body {
+  padding: 20px 24px;
+  font-size: 14px;
+  line-height: 2.15;
+  color: #4A4A4A;
+  letter-spacing: 0.04em;
+}
+.modal-body .muted { color: #9AA8B4; font-style: italic; }
+
+/* ==========================================================
+   全屏放大层（灯箱）
+   ========================================================== */
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(0, 0, 0, 0.96);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  cursor: grab;
+}
+.lightbox.on {
+  display: flex;
+  opacity: 1;
+}
+.lightbox.dragging { cursor: grabbing; }
+
+/* 图片容器：承载 scale/translate */
+.lb-canvas {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  will-change: transform;
+}
+
+.lb-img {
+  max-width: 88vw;
+  max-height: 88vh;
+  display: block;
+  transform-origin: center center;
+  transition: transform 0.12s ease-out;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-user-drag: none;
+  pointer-events: none;
+  will-change: transform;
+}
+
+/* 图片加载失败时，在灯箱里显示占位 */
+.lb-fallback {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  color: #5A5A5A;
+  font-family: "Microsoft YaHei", sans-serif;
+  font-size: 13px;
+  letter-spacing: 0.28em;
+  text-align: center;
+  padding: 40px;
+  line-height: 2.2;
+}
+
+/* 顶部说明条 */
+.lb-bar {
+  position: absolute;
+  left: 0; right: 0; top: 0;
+  z-index: 3;
+  padding: 14px 22px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #B8C4CE;
+  font-family: "Microsoft YaHei", sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  background: linear-gradient(180deg,
+    rgba(0, 0, 0, 0.75) 0%,
+    rgba(0, 0, 0, 0) 100%);
+  pointer-events: none;
+}
+.lb-bar .lb-title {
+  color: #DCE6EE;
+  font-size: 13px;
+  letter-spacing: 0.2em;
+}
+.lb-bar .lb-close {
+  pointer-events: auto;
+  cursor: pointer;
+  color: #B8C4CE;
+  padding: 2px 8px;
+  font-size: 20px;
+  line-height: 1;
+  transition: color 0.2s ease;
+}
+.lb-bar .lb-close:hover { color: #FFFFFF; }
+
+/* 底部提示与缩放指示 */
+.lb-foot {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  z-index: 3;
+  padding: 20px 24px 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(0deg,
+    rgba(0, 0, 0, 0.78) 0%,
+    rgba(0, 0, 0, 0) 100%);
+  pointer-events: none;
+}
+.lb-tip {
+  color: #8A98A6;
+  font-family: "Microsoft YaHei", sans-serif;
+  font-size: 11.5px;
+  letter-spacing: 0.2em;
+  transition: opacity 0.5s ease;
+}
+.lb-tip.fade { opacity: 0.25; }
+
+.lb-zoom-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  pointer-events: auto;
+}
+.lb-zoom-btn {
+  cursor: pointer;
+  color: #B8C4CE;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  padding: 3px 12px;
+  font-family: "Microsoft YaHei", sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  transition: background 0.2s ease, color 0.2s ease;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.lb-zoom-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: #FFFFFF;
+}
+.lb-zoom-val {
+  color: #6E7C8A;
+  font-family: "Courier New", monospace;
+  font-size: 11.5px;
+  letter-spacing: 0.08em;
+  min-width: 62px;
+  text-align: center;
+}
+
+/* 到达最大缩放时的小提示 */
+.lb-maxhint {
+  color: #C0392B;
+  font-family: "Microsoft YaHei", sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.28em;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+  text-shadow: 0 0 10px rgba(192, 57, 43, 0.6);
+}
+.lb-maxhint.on { opacity: 1; }
+
+/* ==========================================================
+   图片未加载时的兜底：扩展图片本身可点击放大
+   ========================================================== */
+.avatar-large.image-missing { cursor: zoom-in; }
+</style>
+</head>
+
+<body>
+
+<div id="boot"></div>
+<div class="noise"></div>
+
+<div class="wrap" id="wrap">
+
+  <!-- 顶部小工具栏 -->
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div>您好，游客　欢迎来到平安里社区</div>
+      <div>
+        <a href="#">登录</a>
+        <span class="sp">|</span>
+        <a href="#">注册</a>
+        <span class="sp">|</span>
+        <a href="#">找回密码</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- 页头 -->
+  <div class="header">
+    <div class="header-inner">
+      <div class="logo-block">
+        <h1>平安里社区</h1>
+        <span class="slogan">平安里，一家人的社区</span>
+      </div>
+      <div class="search">
+        <input type="text" placeholder="请输入搜索内容" aria-label="搜索">
+        <button type="button">搜索</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 主导航 -->
+  <div class="main-nav">
+    <div class="main-nav-inner">
+      <a href="../index.html" class="active">论坛</a>
+      <a href="#">群组</a>
+      <a href="#">家园</a>
+      <a href="#">应用</a>
+      <a href="#">排行榜</a>
+    </div>
+  </div>
+
+  <div class="container">
+
+    <!-- 面包屑 -->
+    <div class="crumb">
+      <a href="../index.html">平安里社区</a>
+      <span class="arrow">›</span>
+      <a href="../index.html">论坛</a>
+      <span class="arrow">›</span>
+      <a href="../talk.html">都市怪谈</a>
+      <span class="arrow">›</span>
+      <strong>小雨转晴</strong>
+    </div>
+
+    <!-- ============ 个人资料卡 ============ -->
+    <div class="profile-card">
+
+      <div class="profile-header">
+        <h2 class="p-title">个人资料 · 小雨转晴</h2>
+      </div>
+
+      <div class="profile-body">
+
+        <!-- ---------- 左侧：大头像 ---------- -->
+        <div class="avatar-col">
+          <div class="avatar-large" id="avatarLarge"
+               title="点击放大">
+            <div class="avatar-fallback">
+              <div class="fb-inner">走廊照片缺失</div>
+            </div>
+            <img src="../../images/xiaoyu-door.jpg"
+                 alt="小雨转晴 · 走廊照片"
+                 id="avatarImg"
+                 onerror="this.style.display='none';document.getElementById('avatarLarge').classList.add('image-missing');">
+            <span class="zoom-hint">点击放大</span>
+          </div>
+
+          <div class="avatar-meta">
+            <div class="am-name">小雨转晴</div>
+            <div class="am-group">普通会员</div>
+          </div>
+        </div>
+
+        <!-- ---------- 右侧：资料表格 + 签名 ---------- -->
+        <div class="info-col">
+          <table class="info-table">
+            <tr>
+              <th>用户名</th>
+              <td>小雨转晴</td>
+            </tr>
+            <tr>
+              <th>注册时间</th>
+              <td class="mono">2013-04-01</td>
+            </tr>
+            <tr>
+              <th>最后访问</th>
+              <td class="mono">2013-11-07 23:47</td>
+            </tr>
+            <tr>
+              <th>用户组</th>
+              <td>普通会员</td>
+            </tr>
+            <tr>
+              <th>帖子</th>
+              <td>
+                <span class="post-link" id="postCountLink">
+                  帖子：<span class="post-count">4</span>
+                  <span class="expand-arrow" id="expandArrow">›</span>
+                </span>
+              </td>
+            </tr>
+          </table>
+
+          <!-- 签名区 -->
+          <div class="signature-block">
+            <div class="sg-label">签 名</div>
+            <div class="sg-text" id="signatureText">“我在门后面。”</div>
+          </div>
+        </div>
+
+      </div><!-- /profile-body -->
+
+    </div><!-- /profile-card -->
+
+    <!-- ============ 展开的第 4 个帖子 ============ -->
+    <div class="post-expand" id="postExpand">
+      <div class="post-expand-inner">
+        <h3 class="pe-title">《我家的门》</h3>
+        <div class="pe-meta">
+          <span class="who">小雨转晴</span>
+          <span class="sep">|</span>
+          <span>2013-06-01</span>
+          <span class="sep">|</span>
+          <span>回复：0</span>
+          <span class="sep">|</span>
+          <span style="color:#B8C0C8;font-style:italic;">（该帖未在版块中显示）</span>
+        </div>
+        <div class="pe-content">我家有七扇门。
+第一扇是入户门。
+第二扇是卧室门。
+第三扇是卫生间门。
+第四扇是厨房门。
+第五扇是阳台门。
+第六扇是衣柜门。
+
+第七扇门在哪里？
+
+我找了很久。
+后来我发现，
+第七扇门是猫眼。</div>
+      </div>
+    </div>
+
+  </div><!-- /container -->
+
+  <!-- 页脚 -->
+  <div class="footer">
+    <div class="footer-inner">
+      <div class="footer-links">
+        <a href="../sitemap.html">站点地图</a>
+        <span class="sep">|</span>
+        <a href="#" data-modal="该页面已无法访问。" data-title="提示">联系我们</a>
+        <span class="sep">|</span>
+        <a href="#" data-modal="归档服务已停止。" data-title="提示">归档</a>
+      </div>
+      <div class="copyright">
+        Powered by Discuz! X3　© 2001-2013　平安里社区
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- 模态框 -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" role="dialog">
+    <div class="modal-head">
+      <span id="modalTitle">提示</span>
+      <span class="modal-close" id="modalClose">✕</span>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<!-- ============ 全屏放大层 ============ -->
+<div class="lightbox" id="lightbox">
+  <div class="lb-bar">
+    <span class="lb-title">走廊 · 拍摄者未知</span>
+    <span class="lb-close" id="lbClose">✕</span>
+  </div>
+
+  <div class="lb-canvas" id="lbCanvas">
+    <img class="lb-img" id="lbImg" src="../../images/xiaoyu-door.jpg" alt="走廊照片">
+    <div class="lb-fallback" id="lbFallback">
+      图片未能加载。<br>
+      <span style="color:#4A4A4A;letter-spacing:0.18em;font-size:11.5px;">
+        请将走廊照片放入 images/xiaoyu-door.jpg
+      </span>
+    </div>
+  </div>
+
+  <div class="lb-foot">
+    <div class="lb-maxhint" id="lbMaxHint">已放到最大 · 看清了吗</div>
+    <div class="lb-zoom-row">
+      <span class="lb-zoom-btn" id="lbZoomOut">−</span>
+      <span class="lb-zoom-val" id="lbZoomVal">100%</span>
+      <span class="lb-zoom-btn" id="lbZoomIn">+</span>
+      <span class="lb-zoom-btn" id="lbReset" style="margin-left:10px;">复位</span>
+    </div>
+    <div class="lb-tip" id="lbTip">滚轮缩放 · 拖动平移 · ESC 关闭</div>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ---------- 假加载 ---------- */
+  setTimeout(function () {
+    document.getElementById('wrap').classList.add('loaded');
+    document.getElementById('boot').classList.add('gone');
+  }, 700);
+
+  /* ============================================================
+     模态框
+     ============================================================ */
+  var overlay = document.getElementById('modalOverlay');
+  var mTitle  = document.getElementById('modalTitle');
+  var mBody   = document.getElementById('modalBody');
+  var mClose  = document.getElementById('modalClose');
+
+  function openModal(title, html) {
+    mTitle.textContent = title || '提示';
+    mBody.innerHTML = html;
+    overlay.classList.add('on');
+  }
+  function closeModal() { overlay.classList.remove('on'); }
+
+  mClose.addEventListener('click', closeModal);
+  overlay.addEventListener('click', function (e) {
+    if (e.target === overlay) closeModal();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && overlay.classList.contains('on')) closeModal();
+  });
+
+  Array.prototype.forEach.call(
+    document.querySelectorAll('[data-modal]'),
+    function (el) {
+      el.addEventListener('click', function (e) {
+        e.preventDefault();
+        openModal(el.getAttribute('data-title') || '提示',
+                  el.getAttribute('data-modal'));
+      });
+    }
+  );
+
+  /* ============================================================
+     隐藏交互 1：签名点击
+     ============================================================ */
+  var signatureText = document.getElementById('signatureText');
+  signatureText.addEventListener('click', function () {
+    openModal('签名',
+      '她在门后面。<br>' +
+      '你在门前面。<br>' +
+      '你们之间隔着一个猫眼。');
+  });
+
+  /* ============================================================
+     隐藏交互 2：帖子：4 展开第 4 个帖子
+     ============================================================ */
+  var postCountLink = document.getElementById('postCountLink');
+  var postExpand    = document.getElementById('postExpand');
+  var expandArrow   = document.getElementById('expandArrow');
+
+  postCountLink.addEventListener('click', function () {
+    var on = postExpand.classList.toggle('on');
+    expandArrow.classList.toggle('open', on);
+
+    if (on) {
+      // 展开后滚动一点，让内容可见
+      setTimeout(function () {
+        var rect = postExpand.getBoundingClientRect();
+        if (rect.bottom > window.innerHeight) {
+          postExpand.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      }, 260);
+    }
+  });
+
+  /* ============================================================
+     全屏放大层（灯箱）：走廊照片
+     ============================================================ */
+  var avatarLarge = document.getElementById('avatarLarge');
+  var lightbox    = document.getElementById('lightbox');
+  var lbImg       = document.getElementById('lbImg');
+  var lbFallback  = document.getElementById('lbFallback');
+  var lbCanvas    = document.getElementById('lbCanvas');
+  var lbClose     = document.getElementById('lbClose');
+  var lbZoomIn    = document.getElementById('lbZoomIn');
+  var lbZoomOut   = document.getElementById('lbZoomOut');
+  var lbReset     = document.getElementById('lbReset');
+  var lbZoomVal   = document.getElementById('lbZoomVal');
+  var lbMaxHint   = document.getElementById('lbMaxHint');
+  var lbTip       = document.getElementById('lbTip');
+
+  var SCALE_MIN  = 1;
+  var SCALE_MAX  = 6;
+  var SCALE_STEP = 1.25;
+
+  var scale = 1;
+  var panX  = 0;
+  var panY  = 0;
+
+  var dragging = false;
+  var dragStartX = 0;
+  var dragStartY = 0;
+  var dragStartPanX = 0;
+  var dragStartPanY = 0;
+  var movedDuringDrag = false;
+
+  var tipTimer = null;
+
+  /* 图片是否真实存在 */
+  var imgExists = true;
+  lbImg.addEventListener('error', function () {
+    imgExists = false;
+    lbImg.style.display = 'none';
+    lbFallback.style.display = 'flex';
+  });
+  lbImg.addEventListener('load', function () {
+    imgExists = true;
+    lbImg.style.display = 'block';
+    lbFallback.style.display = 'none';
+  });
+
+  function applyTransform() {
+    if (!imgExists) return;
+    lbImg.style.transform =
+      'translate(' + panX.toFixed(2) + 'px, ' +
+                     panY.toFixed(2) + 'px) ' +
+      'scale(' + scale.toFixed(4) + ')';
+    lbZoomVal.textContent = Math.round(scale * 100) + '%';
+
+    /* 到达最大缩放：显示提示 */
+    if (scale >= SCALE_MAX - 0.001) {
+      lbMaxHint.classList.add('on');
+    } else {
+      lbMaxHint.classList.remove('on');
+    }
+
+    /* 缩放后拖动的边界修正 */
+    clampPan();
+  }
+
+  /* 拖动的边界：超出时拉回来，避免图片完全飞出视野 */
+  function clampPan() {
+    if (!imgExists) return;
+    if (scale <= SCALE_MIN + 0.001) {
+      panX = 0;
+      panY = 0;
+      return;
+    }
+    var maxPanX = (scale - 1) * 260;
+    var maxPanY = (scale - 1) * 200;
+    if (panX >  maxPanX) panX =  maxPanX;
+    if (panX < -maxPanX) panX = -maxPanX;
+    if (panY >  maxPanY) panY =  maxPanY;
+    if (panY < -maxPanY) panY = -maxPanY;
+  }
+
+  function setScale(next) {
+    scale = Math.max(SCALE_MIN, Math.min(SCALE_MAX, next));
+    if (scale <= SCALE_MIN + 0.001) {
+      panX = 0;
+      panY = 0;
+    }
+    applyTransform();
+  }
+
+  function resetView() {
+    scale = 1;
+    panX = 0;
+    panY = 0;
+    applyTransform();
+  }
+
+  /* ---------- 打开 / 关闭 ---------- */
+  function openLightbox() {
+    lightbox.classList.add('on');
+    resetView();
+
+    /* 每次打开，先把底部提示显示清楚，几秒后再变淡 */
+    lbTip.classList.remove('fade');
+    if (tipTimer) clearTimeout(tipTimer);
+    tipTimer = setTimeout(function () {
+      lbTip.classList.add('fade');
+    }, 4200);
+
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeLightbox() {
+    lightbox.classList.remove('on');
+    document.body.style.overflow = '';
+    if (tipTimer) { clearTimeout(tipTimer); tipTimer = null; }
+  }
+
+  avatarLarge.addEventListener('click', function () {
+    openLightbox();
+  });
+
+  lbClose.addEventListener('click', function (e) {
+    e.stopPropagation();
+    closeLightbox();
+  });
+
+  /* 点击画布空白处（不拖动的情况下）也能关闭 */
+  lbCanvas.addEventListener('mousedown', function (e) {
+    /* 记录按下，用于判断是拖动还是点击 */
+    movedDuringDrag = false;
+  });
+
+  lightbox.addEventListener('click', function (e) {
+    /* 只有点在最外层的黑色背景上才关闭 */
+    if (e.target === lightbox && !movedDuringDrag) {
+      closeLightbox();
+    }
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && lightbox.classList.contains('on')) {
+      closeLightbox();
+    }
+  });
+
+  /* ---------- 滚轮缩放 ---------- */
+  lightbox.addEventListener('wheel', function (e) {
+    if (!lightbox.classList.contains('on')) return;
+    e.preventDefault();
+
+    var factor = e.deltaY < 0 ? SCALE_STEP : 1 / SCALE_STEP;
+    setScale(scale * factor);
+  }, { passive: false });
+
+  /* ---------- 按钮缩放 ---------- */
+  lbZoomIn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    setScale(scale * SCALE_STEP);
+  });
+  lbZoomOut.addEventListener('click', function (e) {
+    e.stopPropagation();
+    setScale(scale / SCALE_STEP);
+  });
+  lbReset.addEventListener('click', function (e) {
+    e.stopPropagation();
+    resetView();
+  });
+
+  /* ---------- 拖动平移 ---------- */
+  function onDragStart(e) {
+    if (!lightbox.classList.contains('on')) return;
+    if (scale <= SCALE_MIN + 0.001) return;
+
+    dragging = true;
+    movedDuringDrag = false;
+    lightbox.classList.add('dragging');
+
+    var point = e.touches ? e.touches[0] : e;
+    dragStartX = point.clientX;
+    dragStartY = point.clientY;
+    dragStartPanX = panX;
+    dragStartPanY = panY;
+  }
+
+  function onDragMove(e) {
+    if (!dragging) return;
+
+    var point = e.touches ? e.touches[0] : e;
+    var dx = point.clientX - dragStartX;
+    var dy = point.clientY - dragStartY;
+
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+      movedDuringDrag = true;
+    }
+
+    panX = dragStartPanX + dx;
+    panY = dragStartPanY + dy;
+    applyTransform();
+
+    if (e.cancelable) e.preventDefault();
+  }
+
+  function onDragEnd() {
+    if (!dragging) return;
+    dragging = false;
+    lightbox.classList.remove('dragging');
+    /* 松开后稍微延迟清除 moved 标记，避免 click 误判 */
+    setTimeout(function () { movedDuringDrag = false; }, 60);
+  }
+
+  lightbox.addEventListener('mousedown', onDragStart);
+  document.addEventListener('mousemove', onDragMove);
+  document.addEventListener('mouseup', onDragEnd);
+
+  lightbox.addEventListener('touchstart', onDragStart, { passive: true });
+  document.addEventListener('touchmove', onDragMove, { passive: false });
+  document.addEventListener('touchend', onDragEnd);
+  document.addEventListener('touchcancel', onDragEnd);
+
+  /* ---------- 双击复位 ---------- */
+  lightbox.addEventListener('dblclick', function (e) {
+    if (!lightbox.classList.contains('on')) return;
+    e.preventDefault();
+    resetView();
+  });
+
+})();
+</script>
+
+</body>
+</html>

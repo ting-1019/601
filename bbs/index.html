@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=980">
+<title>平安里社区 - 论坛首页</title>
+<style>
+/* ==========================================================
+   全局
+   ========================================================== */
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: #E8ECEF;
+}
+
+body {
+  font-family: "Songti SC", "SimSun", "STSong", "Songti TC",
+               "Noto Serif SC", "Source Han Serif SC", serif;
+  font-size: 12px;
+  line-height: 1.6;
+  color: #333;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+a {
+  color: #3A5A8C;
+  text-decoration: none;
+  cursor: pointer;
+}
+a:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* ==========================================================
+   假加载
+   ========================================================== */
+#boot {
+  position: fixed;
+  inset: 0;
+  background: #FFFFFF;
+  z-index: 9999;
+  transition: opacity 0.55s ease;
+}
+#boot.gone { opacity: 0; pointer-events: none; }
+
+.wrap {
+  opacity: 0;
+  transition: opacity 0.9s ease;
+}
+.wrap.loaded { opacity: 1; }
+
+/* ==========================================================
+   噪点
+   ========================================================== */
+.noise {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  pointer-events: none;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/></filter><rect width='220' height='220' filter='url(%23n)'/></svg>");
+}
+
+/* ==========================================================
+   顶部小工具栏
+   ========================================================== */
+.topbar {
+  background: #2F3D4C;
+  height: 28px;
+  font-family: "Microsoft YaHei", "Tahoma", sans-serif;
+  font-size: 12px;
+  color: #B7C2CC;
+  line-height: 28px;
+}
+.topbar-inner {
+  width: 960px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+}
+.topbar a {
+  color: #B7C2CC;
+  text-decoration: none;
+}
+.topbar a:hover { color: #FFFFFF; text-decoration: none; }
+.topbar .sp { margin: 0 8px; color: #536273; }
+
+/* ==========================================================
+   页头（logo + slogan + 搜索）
+   ========================================================== */
+.header {
+  background: #FFFFFF;
+  border-bottom: 1px solid #D5DDE4;
+}
+.header-inner {
+  width: 960px;
+  margin: 0 auto;
+  height: 90px;
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+.logo-block { display: flex; align-items: baseline; gap: 14px; }
+.logo-block h1 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: bold;
+  letter-spacing: 0.06em;
+  color: #2B4F6E;
+  font-family: "Songti SC", "SimSun", serif;
+}
+.logo-block .slogan {
+  font-size: 12px;
+  color: #9AA8B4;
+  letter-spacing: 0.04em;
+}
+.search {
+  margin-left: auto;
+  display: flex;
+}
+.search input {
+  width: 190px;
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid #C5CFD8;
+  border-right: 0;
+  background: #FAFCFD;
+  font-family: "Microsoft YaHei", sans-serif;
+  font-size: 12px;
+  color: #333;
+  outline: none;
+}
+.search input:focus { border-color: #8FAFC8; background: #FFFFFF; }
+.search button {
+  height: 28px;
+  padding: 0 16px;
+  border: 1px solid #6A8BAC;
+  background: linear-gradient(180deg, #8DA9C2, #6A8BAC);
+  color: #FFFFFF;
+  font-family: "Microsoft YaHei", sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+}
+.search button:hover { background: linear-gradient(180deg, #7E9CB7, #5D7FA1); }
+.search button:active { background: #5D7FA1; }
+
+/* ==========================================================
+   主导航栏
+   ========================================================== */
+.main-nav {
+  background: linear-gradient(180deg, #5C7C9A 0%, #4A6C8C 100%);
+  height: 38px;
+  border-bottom: 3px solid #3A5A7C;
+}
+.main-nav-inner {
+  width: 960px;
+  margin: 0 auto;
+  display: flex;
+  height: 100%;
+}
+.main-nav a {
+  display: flex;
+  align-items: center;
+  padding: 0 26px;
+  color: #DCE6EE;
+  font-family: "Microsoft YaHei", sans-serif;
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  text-decoration: none;
+  border-right: 1px solid rgba(255,255,255,0.06);
+  height: 100%;
+}
+.main-nav a:hover {
+  background: rgba(255,255,255,0.08);
+  text-decoration: none;
+  color: #FFFFFF;
+}
+.main-nav a.active {
+  background: #3E5C7A;
+  color: #FFFFFF;
+  font-weight: bold;
+}
+
+/* ==========================================================
+   容器
+   ========================================================== */
+.container {
+  width: 960px;
+  margin: 0 auto;
+  padding: 14px 0 30px;
+}
+
+/* ==========================================================
+   横幅广告位
+   ========================================================== */
+.banner {
+  background: #DDE3E8;
+  border: 1px solid #C5CFD8;
+  margin-bottom: 12px;
+  position: relative;
+  overflow: hidden;
+}
+
+.banner img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* ==========================================================
+   面包屑
+   ========================================================== */
+.crumb {
+  padding: 8px 12px;
+  background: #F2F5F7;
+  border: 1px solid #D9E0E6;
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 12px;
+}
+.crumb .arrow {
+  color: #A0A8B0;
+  margin: 0 6px;
+}
+.crumb strong { color: #333; font-weight: normal; }
+
+/* ==========================================================
+   公告条
+   ========================================================== */
+.announce {
+  display: flex;
+  gap: 10px;
+  padding: 10px 14px;
+  background: #FEFBE5;
+  border: 1px solid #EFE2A8;
+  margin-bottom: 14px;
+  line-height: 1.85;
+  font-size: 12.5px;
+  color: #6B5D2A;
+  position: relative;
+}
+.announce .icon {
+  flex: 0 0 auto;
+  color: #C9A83A;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.announce .body { flex: 1 1 auto; }
+.announce .body .line { display: block; }
+.announce .sign {
+  color: #9A8C5A;
+  text-align: right;
+  display: block;
+  margin-top: 2px;
+  font-style: italic;
+}
+
+/* ==========================================================
+   版块表格
+   ========================================================== */
+.forum-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #CBD4DC;
+  background: #FFFFFF;
+  font-size: 12.5px;
+}
+
+.forum-table thead th {
+  background: linear-gradient(180deg, #EDF2F6 0%, #DCE5EC 100%);
+  border-bottom: 1px solid #C5CFD8;
+  padding: 8px 10px;
+  font-family: "Microsoft YaHei", sans-serif;
+  font-weight: normal;
+  font-size: 12px;
+  color: #4A6076;
+  text-align: left;
+  letter-spacing: 0.05em;
+}
+.forum-table thead th.col-theme,
+.forum-table thead th.col-post {
+  width: 64px;
+  text-align: center;
+}
+.forum-table thead th.col-last { width: 240px; }
+
+.forum-table tbody td {
+  border-bottom: 1px solid #E5EAEF;
+  padding: 12px 10px;
+  vertical-align: middle;
+}
+.forum-table tbody tr:last-child td { border-bottom: 0; }
+.forum-table tbody tr:hover { background: #F5F9FC; }
+
+/* 图标列 */
+.forum-table td.col-icon {
+  width: 62px;
+  padding-left: 14px;
+}
+.forum-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #E9F2F9 0%, #D0E0ED 100%);
+  border: 1px solid #A9C4D8;
+  position: relative;
+}
+.forum-icon::before {
+  content: "";
+  position: absolute;
+  left: 10px; top: 9px;
+  width: 24px; height: 18px;
+  background: #7EA6C5;
+  border-radius: 2px;
+}
+.forum-icon::after {
+  content: "";
+  position: absolute;
+  left: 10px; top: 27px;
+  width: 0; height: 0;
+  border: 5px solid transparent;
+  border-top-color: #7EA6C5;
+  border-left-color: #7EA6C5;
+}
+/* 版块图标配色变体 */
+.forum-icon.tone-b::before,
+.forum-icon.tone-b::after { background-color: #8C9FB0; }
+.forum-icon.tone-b::after { border-top-color: #8C9FB0; border-left-color: #8C9FB0; }
+.forum-icon.tone-c::before { background-color: #A0867E; }
+.forum-icon.tone-c::after { border-top-color: #A0867E; border-left-color: #A0867E; }
+.forum-icon.tone-d::before { background-color: #7C8CA0; }
+.forum-icon.tone-d::after { border-top-color: #7C8CA0; border-left-color: #7C8CA0; }
+
+/* 版块名称 */
+.forum-table td.col-name { padding-right: 12px; }
+.forum-name {
+  font-size: 13.5px;
+  font-weight: bold;
+  color: #2B4F6E;
+  letter-spacing: 0.02em;
+}
+.forum-name:hover { color: #3A5A8C; }
+.forum-moderator {
+  margin-top: 3px;
+  font-size: 11.5px;
+  color: #9AA8B4;
+}
+
+/* 主题/帖数 */
+.forum-table td.col-theme,
+.forum-table td.col-post {
+  text-align: center;
+  font-family: "Tahoma", "Microsoft YaHei", sans-serif;
+  font-size: 12px;
+  color: #6B7B8A;
+}
+
+/* 最后回复 */
+.forum-table td.col-last {
+  font-size: 12px;
+  color: #666;
+  line-height: 1.7;
+}
+.last-title {
+  display: block;
+  color: #4A6C8C;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 220px;
+}
+.last-meta { color: #9AA8B4; font-size: 11.5px; margin-top: 1px; }
+.last-meta .who { color: #8A98A6; }
+
+/* ==========================================================
+   底部统计栏
+   ========================================================== */
+.stats {
+  margin-top: 14px;
+  padding: 12px 16px;
+  background: #F2F5F7;
+  border: 1px solid #D9E0E6;
+  font-size: 12.5px;
+  color: #556;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 22px;
+  align-items: center;
+}
+.stats .num {
+  font-family: "Tahoma", sans-serif;
+  color: #C03A2B;
+  font-weight: bold;
+  padding: 0 3px;
+}
+.stats .sep { color: #B8C2CC; }
+.stats .online { color: #3A5A8C; }
+
+/* ==========================================================
+   页脚
+   ========================================================== */
+.footer {
+  background: #F5F3EE;
+  border-top: 1px solid #E0DCD0;
+  padding: 22px 0 30px;
+  margin-top: 10px;
+}
+.footer-inner {
+  width: 960px;
+  margin: 0 auto;
+  text-align: center;
+  color: #8A8676;
+  font-size: 12px;
+  line-height: 2;
+}
+.footer-links a {
+  color: #7A7666;
+  margin: 0 10px;
+  text-decoration: none;
+}
+.footer-links a:hover { color: #3A5A8C; text-decoration: underline; }
+.footer-links .sep { color: #C5C0B0; }
+
+.copyright {
+  color: #A8A496;
+  font-size: 11.5px;
+  margin-top: 4px;
+}
+
+/* 隐藏彩蛋 */
+.hidden-text {
+  color: #F5F3EE;
+  user-select: text;
+  -webkit-user-select: text;
+  font-size: 12px;
+  line-height: 2;
+  margin-top: 8px;
+}
+.hidden-text::selection {
+  background: #2B2B2B;
+  color: #F5F3EE;
+}
+.hidden-text::-moz-selection {
+  background: #2B2B2B;
+  color: #F5F3EE;
+}
+
+/* ==========================================================
+   Discuz! 风格模态框
+   ========================================================== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 30, 40, 0.35);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+.modal-overlay.on {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.modal {
+  background: #FFFFFF;
+  border: 1px solid #93AEC9;
+  min-width: 300px;
+  max-width: 460px;
+  box-shadow: 0 6px 22px rgba(20, 30, 40, 0.3);
+  transform: translateY(-6px);
+  transition: transform 0.2s ease;
+}
+.modal-overlay.on .modal { transform: translateY(0); }
+
+.modal-head {
+  background: linear-gradient(180deg, #E6EFF6 0%, #D0E0ED 100%);
+  border-bottom: 1px solid #93AEC9;
+  padding: 7px 12px;
+  font-family: "Microsoft YaHei", sans-serif;
+  font-size: 12px;
+  color: #2B4F6E;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: bold;
+  letter-spacing: 0.05em;
+}
+.modal-close {
+  cursor: pointer;
+  color: #5A7A9A;
+  font-size: 15px;
+  line-height: 1;
+  padding: 0 4px;
+  font-weight: normal;
+}
+.modal-close:hover { color: #C03A2B; }
+
+.modal-body {
+  padding: 18px 22px;
+  font-size: 13px;
+  line-height: 2;
+  color: #333;
+}
+.modal-body .muted {
+  color: #9AA8B4;
+  font-style: italic;
+}
+
+/* 在线用户浮层列表 */
+.online-list { margin: 0; padding: 0; list-style: none; }
+.online-list li {
+  padding: 6px 0;
+  border-bottom: 1px dashed #E5EAEF;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+.online-list li:last-child { border-bottom: 0; }
+.online-list .name {
+  color: #3A5A8C;
+  cursor: pointer;
+}
+.online-list .name:hover { text-decoration: underline; }
+.online-list .name.plain { color: #333; cursor: default; }
+.online-list .name.plain:hover { text-decoration: none; }
+.online-list .meta { color: #9AA8B4; font-size: 12px; }
+</style>
+</head>
+
+<body>
+
+<div id="boot"></div>
+<div class="noise"></div>
+
+<div class="wrap" id="wrap">
+
+  <!-- ============ 顶部小工具栏 ============ -->
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div>您好，游客　欢迎来到平安里社区</div>
+      <div>
+        <a href="#">登录</a>
+        <span class="sp">|</span>
+        <a href="#">注册</a>
+        <span class="sp">|</span>
+        <a href="#">找回密码</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 页头 ============ -->
+  <div class="header">
+    <div class="header-inner">
+      <div class="logo-block">
+        <h1>平安里社区</h1>
+        <span class="slogan">平安里，一家人的社区</span>
+      </div>
+      <div class="search">
+        <input type="text" placeholder="请输入搜索内容" aria-label="搜索">
+        <button type="button">搜索</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 主导航 ============ -->
+  <div class="main-nav">
+    <div class="main-nav-inner">
+      <a href="#" class="active">论坛</a>
+      <a href="#">群组</a>
+      <a href="#">家园</a>
+      <a href="#">应用</a>
+      <a href="#">排行榜</a>
+    </div>
+  </div>
+
+  <div class="container">
+
+    <!-- ============ 横幅广告位 ============ -->
+    <div class="banner">
+      <img src="../images/banner.jpg" alt="平安里社区横幅">
+    </div>
+
+    <!-- ============ 面包屑 ============ -->
+    <div class="crumb">
+      <a href="#">平安里社区</a>
+      <span class="arrow">›</span>
+      <strong>论坛</strong>
+    </div>
+
+    <!-- ============ 公告条 ============ -->
+    <div class="announce">
+      <span class="icon">❚</span>
+      <div class="body">
+        <span class="line">【公告】本站将于 2013年11月10日 永久关闭。</span>
+        <span class="line">请各位居民自行备份重要资料。</span>
+        <span class="sign">—— 平安里管家</span>
+      </div>
+    </div>
+
+    <!-- ============ 版块表格 ============ -->
+    <table class="forum-table">
+      <thead>
+        <tr>
+          <th class="col-icon"></th>
+          <th class="col-name">版块</th>
+          <th class="col-theme">主题</th>
+          <th class="col-post">帖数</th>
+          <th class="col-last">最后回复</th>
+        </tr>
+      </thead>
+      <tbody>
+
+        <!-- 闲聊灌水 -->
+        <tr>
+          <td class="col-icon"><div class="forum-icon"></div></td>
+          <td class="col-name">
+            <a href="#" class="forum-name" data-modal="该版块已归档" data-title="提示">闲聊灌水</a>
+            <div class="forum-moderator">版主：老周</div>
+          </td>
+          <td class="col-theme">147</td>
+          <td class="col-post">832</td>
+          <td class="col-last">
+            <a href="#" class="last-title" data-modal="该版块已归档" data-title="提示">再见了各位</a>
+            <div class="last-meta"><span class="who">老周</span> · 2013-06-11</div>
+          </td>
+        </tr>
+
+        <!-- 寻人寻物 -->
+        <tr>
+          <td class="col-icon"><div class="forum-icon tone-b"></div></td>
+          <td class="col-name">
+            <a href="find.html" class="forum-name">寻人寻物</a>
+            <div class="forum-moderator">版主：平安里管家</div>
+          </td>
+          <td class="col-theme">89</td>
+          <td class="col-post">234</td>
+          <td class="col-last">
+            <a href="find.html" class="last-title">有谁见过小雨转晴吗</a>
+            <div class="last-meta"><span class="who">林深</span> · 2013-11-06</div>
+          </td>
+        </tr>
+
+        <!-- 都市怪谈 -->
+        <tr>
+          <td class="col-icon"><div class="forum-icon tone-c"></div></td>
+          <td class="col-name">
+            <a href="talk.html" class="forum-name">都市怪谈</a>
+            <div class="forum-moderator">版主：匿名</div>
+          </td>
+          <td class="col-theme">63</td>
+          <td class="col-post">421</td>
+          <td class="col-last">
+            <a href="talk.html" class="last-title">我家猫眼的事（更新）</a>
+            <div class="last-meta"><span class="who">匿名</span> · 2013-09-23</div>
+          </td>
+        </tr>
+
+        <!-- 版务管理 -->
+        <tr>
+          <td class="col-icon"><div class="forum-icon tone-d"></div></td>
+          <td class="col-name">
+            <a href="admin.html" class="forum-name">版务管理</a>
+            <div class="forum-moderator">版主：平安里管家</div>
+          </td>
+          <td class="col-theme">21</td>
+          <td class="col-post">45</td>
+          <td class="col-last">
+            <a href="admin.html" class="last-title">本版最后一条公告</a>
+            <div class="last-meta"><span class="who">平安里管家</span> · 2013-11-07</div>
+          </td>
+        </tr>
+
+      </tbody>
+    </table>
+
+    <!-- ============ 底部统计栏 ============ -->
+    <div class="stats">
+      <span>今日：<span class="num">0</span></span>
+      <span class="sep">|</span>
+      <span>昨日：<span class="num">0</span></span>
+      <span class="sep">|</span>
+      <span>会员：<span class="num">1</span></span>
+      <span class="sep">|</span>
+      <span>当前在线：<a href="#" class="online" id="onlineLink">2 人</a></span>
+    </div>
+
+  </div><!-- /container -->
+
+  <!-- ============ 页脚 ============ -->
+  <div class="footer">
+    <div class="footer-inner">
+
+      <div class="footer-links">
+        <a href="sitemap.html">站点地图</a>
+        <span class="sep">|</span>
+        <a href="#" data-modal="该页面已无法访问。" data-title="提示">联系我们</a>
+        <span class="sep">|</span>
+        <a href="#" data-modal="归档服务已停止。" data-title="提示">归档</a>
+      </div>
+
+      <div class="copyright">
+        Powered by Discuz! X3　© 2001-2013　平安里社区
+      </div>
+
+      <div class="hidden-text">彩蛋1线索：老周的签名里有一句话。</div>
+
+    </div>
+  </div>
+
+</div>
+
+<!-- ============ 模态框 ============ -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" role="dialog">
+    <div class="modal-head">
+      <span id="modalTitle">提示</span>
+      <span class="modal-close" id="modalClose">✕</span>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ---------- 假加载 ---------- */
+  setTimeout(function () {
+    document.getElementById('wrap').classList.add('loaded');
+    document.getElementById('boot').classList.add('gone');
+  }, 700);
+
+  /* ============================================================
+     模态框
+     ============================================================ */
+  var overlay   = document.getElementById('modalOverlay');
+  var mTitle    = document.getElementById('modalTitle');
+  var mBody     = document.getElementById('modalBody');
+  var mClose    = document.getElementById('modalClose');
+
+  function openModal(title, html) {
+    mTitle.textContent = title || '提示';
+    mBody.innerHTML = html;
+    overlay.classList.add('on');
+  }
+
+  function closeModal() {
+    overlay.classList.remove('on');
+  }
+
+  mClose.addEventListener('click', closeModal);
+
+  overlay.addEventListener('click', function (e) {
+    if (e.target === overlay) closeModal();
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeModal();
+  });
+
+  /* ---------- 通用 [data-modal] 触发 ---------- */
+  Array.prototype.forEach.call(
+    document.querySelectorAll('[data-modal]'),
+    function (el) {
+      el.addEventListener('click', function (e) {
+        e.preventDefault();
+        openModal(el.getAttribute('data-title') || '提示',
+                  el.getAttribute('data-modal'));
+      });
+    }
+  );
+
+  /* ============================================================
+     当前在线 浮层
+     —— 判定是否从 P53（结局 C）回来
+     ============================================================ */
+  var onlineLink = document.getElementById('onlineLink');
+
+  var isEndingC = false;
+  try {
+    isEndingC = sessionStorage.getItem('endingC') === '1';
+  } catch (err) {
+    isEndingC = false;
+  }
+
+  /* 默认：2 人 */
+  var ONLINE_HTML_DEFAULT =
+    '<ul class="online-list">' +
+      '<li>' +
+        '<span class="name plain">小雨转晴</span>' +
+        '<span class="meta">最后活动：2013-11-07 23:47</span>' +
+      '</li>' +
+      '<li>' +
+        '<span class="name" id="guestLink">游客</span>' +
+        '<span class="meta">最后活动：今天</span>' +
+      '</li>' +
+    '</ul>';
+
+  /* 结局 C 后：3 人 */
+  var ONLINE_HTML_C =
+    '<ul class="online-list">' +
+      '<li>' +
+        '<span class="name plain">小雨转晴</span>' +
+        '<span class="meta">最后活动：今天</span>' +
+      '</li>' +
+      '<li>' +
+        '<span class="name plain">老周</span>' +
+        '<span class="meta">最后活动：今天</span>' +
+      '</li>' +
+      '<li>' +
+        '<span class="name" id="guestLink">您</span>' +
+        '<span class="meta">最后活动：今天</span>' +
+      '</li>' +
+    '</ul>';
+
+  /* 如果从 C 结局回来，改写首页数字 */
+  if (isEndingC) {
+    onlineLink.textContent = '3 人';
+  }
+
+  onlineLink.addEventListener('click', function (e) {
+    e.preventDefault();
+
+    var html = isEndingC ? ONLINE_HTML_C : ONLINE_HTML_DEFAULT;
+    openModal('在线用户', html);
+
+    /* 浮层内的可点击用户（游客 / 您） */
+    var guest = document.getElementById('guestLink');
+    if (guest) {
+      guest.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        if (isEndingC) {
+          openModal('您', '您（最后活动：今天）');
+        } else {
+          openModal('游客', '游客（最后活动：今天）');
+        }
+      });
+    }
+  });
+
+  /* ============================================================
+     彩蛋1 · 拖选隐藏行后解锁（可选）
+     如果后续接 P50 判定，可在此调用 GameState.unlockEgg(1)
+     ============================================================ */
+  var easterText = document.querySelector('.hidden-text');
+  if (easterText) {
+    document.addEventListener('selectionchange', function () {
+      var sel = window.getSelection();
+      if (!sel || sel.isCollapsed) return;
+      try {
+        if (sel.containsNode(easterText, true)) {
+          if (window.GameState && GameState.unlockEgg) {
+            GameState.unlockEgg(1);
+          }
+        }
+      } catch (err) { /* 忽略 */ }
+    });
+  }
+
+})();
+</script>
+
+</body>
+</html>
